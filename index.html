@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Таблица Менделеева</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0b;
+      --surface-hover: #14110f;
+      --border: rgba(255, 159, 67, 0.22);
+      --border-strong: rgba(255, 159, 67, 0.65);
+      --accent: #ff9f43;
+      --accent-soft: #ffb974;
+      --accent-glow: rgba(255, 159, 67, 0.16);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app-wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      transition: padding-bottom 0.42s var(--ease);
+    }
+
+    #app-wrap.has-panel {
+      padding-bottom: 330px;
+    }
+
+    /* Шапка с силуэтом Менделеева */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 22px;
+      gap: 8px;
+      animation: fadeDown 0.55s var(--ease) both;
+    }
+
+    .mendeleev-wrap {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 45%, rgba(255, 159, 67, 0.18), rgba(0, 0, 0, 0) 72%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 159, 67, 0.25);
+      box-shadow: 0 0 28px rgba(255, 159, 67, 0.12);
+      transition: transform 0.35s var(--ease);
+      will-change: transform;
+    }
+
+    .mendeleev-wrap:hover {
+      transform: scale(1.05);
+    }
+
+    .mendeleev-svg {
+      width: 82px;
+      height: 82px;
+      display: block;
+    }
+
+    .hero h1 {
+      font-size: clamp(20px, 3vw, 30px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Статус загрузки / проверки */
+    #status-bar {
+      max-width: 520px;
+      margin: 28px auto;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: center;
+      font-size: 14px;
+      color: var(--accent-soft);
+      transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+    }
+
+    #status-bar.hidden {
+      display: none;
+    }
+
+    #status-bar.error {
+      border-color: #ff5e57;
+      color: #ff8a80;
+    }
+
+    /* Контейнер таблицы */
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      padding: 8px 4px 16px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 159, 67, 0.35) #000000;
+    }
+
+    .table-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .table-scroll::-webkit-scrollbar-track {
+      background: #000000;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 159, 67, 0.35);
+      border-radius: 999px;
+    }
+
+    #table-grid {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(66px, 1fr));
+      grid-auto-rows: 78px;
+      gap: 6px;
+      min-width: 1280px;
+    }
+
+    /* Ячейка элемента */
+    .el-cell {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px 6px 5px;
+      border-radius: 11px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      user-select: none;
+      outline: none;
+      will-change: transform, opacity;
+      transition:
+        transform 0.22s var(--ease),
+        border-color 0.22s var(--ease),
+        background-color 0.22s var(--ease),
+        box-shadow 0.22s var(--ease);
+      animation: cellIn 0.45s var(--ease) both;
+    }
+
+    .el-cell:hover {
+      transform: translate3d(0, -3px, 0) scale(1.045);
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(255, 159, 67, 0.18);
+      z-index: 4;
+    }
+
+    .el-cell:active {
+      transform: translate3d(0, 0, 0) scale(0.97);
+    }
+
+    .el-cell.active {
+      background: rgba(255, 159, 67, 0.14);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(255, 159, 67, 0.25);
+      transform: translate3d(0, -2px, 0) scale(1.03);
+      z-index: 5;
+    }
+
+    .el-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 2px;
+      line-height: 1;
+    }
+
+    .el-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .el-mass {
+      font-size: 8.5px;
+      color: var(--muted);
+      letter-spacing: -0.02em;
+    }
+
+    .el-sym {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .el-names {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+      overflow: hidden;
+    }
+
+    .el-ru {
+      font-size: 9px;
+      font-weight: 500;
+      color: #e5e5ea;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .el-en {
+      font-size: 7.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .series-label {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-soft);
+      opacity: 0.78;
+      user-select: none;
+    }
+
+    .series-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 11px;
+      border: 1px dashed rgba(255, 159, 67, 0.25);
+      background: rgba(255, 159, 67, 0.03);
+      color: var(--accent-soft);
+      font-size: 10px;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    /* Нижняя выезжающая карточка (ПК и телефон) */
+    #detail-panel {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      width: min(920px, calc(100% - 20px));
+      background: rgba(10, 10, 11, 0.96);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border-strong);
+      border-bottom: none;
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.9), 0 -2px 24px rgba(255, 159, 67, 0.14);
+      padding: 20px 22px 22px;
+      z-index: 50;
+      transform: translate3d(-50%, 110%, 0);
+      opacity: 0;
+      pointer-events: none;
+      will-change: transform, opacity;
+      transition: transform 0.38s var(--ease), opacity 0.28s var(--ease);
+    }
+
+    #detail-panel.open {
+      transform: translate3d(-50%, 0, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .panel-handle {
+      width: 42px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 159, 67, 0.35);
+      margin: -6px auto 14px;
+    }
+
+    #detail-close {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #121214;
+      color: var(--accent-soft);
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.22s var(--ease), background-color 0.22s var(--ease), border-color 0.22s var(--ease);
+      will-change: transform;
+    }
+
+    #detail-close:hover {
+      transform: scale(1.08);
+      background: rgba(255, 159, 67, 0.16);
+      border-color: var(--accent);
+    }
+
+    .panel-body {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .panel-body.switching {
+      animation: contentPop 0.28s var(--ease) both;
+    }
+
+    .silhouette-box {
+      width: 120px;
+      height: 120px;
+      border-radius: 18px;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 159, 67, 0.15), #050505 76%);
+      border: 1px solid rgba(255, 159, 67, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      flex-shrink: 0;
+    }
+
+    #detail-silhouette svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(255, 159, 67, 0.28));
+    }
+
+    .detail-info {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 32px;
+    }
+
+    .detail-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    #detail-symbol {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    #detail-name-ru {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    #detail-name-en {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .detail-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 159, 67, 0.11);
+      border: 1px solid rgba(255, 159, 67, 0.26);
+      color: var(--accent-soft);
+    }
+
+    .detail-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-card {
+      background: #050506;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .info-text {
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: #e5e5ea;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translate3d(0, -10px, 0); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    @keyframes cellIn {
+      from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.96); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
+    @keyframes contentPop {
+      from { opacity: 0; transform: translate3d(0, 8px, 0); }
+      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    @media (max-width: 720px) {
+      #app-wrap {
+        padding: 14px 10px 40px;
+      }
+
+      #app-wrap.has-panel {
+        padding-bottom: 410px;
+      }
+
+      #detail-panel {
+        width: 100%;
+        border-radius: 20px 20px 0 0;
+        padding: 16px 14px 18px;
+        max-height: 62vh;
+        overflow-y: auto;
+      }
+
+      .panel-body {
+        grid-template-columns: 82px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .silhouette-box {
+        width: 82px;
+        height: 82px;
+        padding: 10px;
+        border-radius: 14px;
+      }
+
+      .detail-info {
+        padding-right: 26px;
+        gap: 8px;
+      }
+
+      #detail-symbol { font-size: 24px; }
+      #detail-name-ru { font-size: 18px; }
+
+      .detail-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app-wrap">
+    <header class="hero">
+      <div class="mendeleev-wrap" title="Д. И. Менделеев">
+        <!-- Узнаваемый портретный силуэт Д. И. Менделеева (по классическому портрету Крамского/Репина) -->
+        <svg class="mendeleev-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="Силуэт Д. И. Менделеева">
+          <!-- Основной силуэт: пышная шевелюра, борода и плечи -->
+          <path fill="#ff9f43" d="
+            M60 9
+            C46 9 35 16 29 27
+            C22 36 18 48 21 60
+            C23 68 29 73 34 75
+            C34 84 37 92 41 97
+            C28 100 18 106 13 116
+            L107 116
+            C102 106 92 100 79 97
+            C83 92 86 84 86 75
+            C91 73 97 68 99 60
+            C102 48 98 36 91 27
+            C85 16 74 9 60 9 Z
+          "/>
+          <!-- Просвет высокого лба и лица -->
+          <path fill="#000000" d="
+            M60 22
+            C49 22 42 28 41 39
+            C40 44 41 48 43 52
+            C46 53 50 53 54 54
+            C56 51 57 46 58 42
+            L62 42
+            C63 46 64 51 66 54
+            C70 53 74 53 77 52
+            C79 48 80 44 79 39
+            C78 28 71 22 60 22 Z
+          "/>
+          <!-- Выразительные брови и глубоко посаженные глаза -->
+          <path fill="#ff9f43" d="
+            M43 38 C47 35 53 35 57 38 C54 40 47 40 43 38 Z
+            M63 38 C67 35 73 35 77 38 C73 40 66 40 63 38 Z
+          "/>
+          <ellipse cx="50" cy="42.5" rx="2.6" ry="1.8" fill="#ff9f43"/>
+          <ellipse cx="70" cy="42.5" rx="2.6" ry="1.8" fill="#ff9f43"/>
+          <!-- Линия переносицы -->
+          <path fill="#ff9f43" d="M58.5 39 L61.5 39 L62.5 52 L57.5 52 Z"/>
+          <!-- Разделение пышных усов и длинной бороды -->
+          <path fill="none" stroke="#000000" stroke-width="2.1" stroke-linecap="round" d="
+            M43 62 C50 66 56 64 60 63 C64 64 70 66 77 62
+          "/>
+          <!-- Контур длинной струящейся бороды -->
+          <path fill="none" stroke="#000000" stroke-width="1.8" stroke-linecap="round" d="
+            M42 74 C44 89 51 101 60 106 C69 101 76 89 78 74
+            M51 73 C52 86 55 96 58 102
+            M69 73 C68 86 65 96 62 102
+          "/>
+          <!-- Пряди волос по бокам и воротник сюртука -->
+          <path fill="none" stroke="#000000" stroke-width="1.7" stroke-linecap="round" d="
+            M31 36 C26 45 26 56 31 64
+            M89 36 C94 45 94 56 89 64
+            M41 98 L53 116
+            M79 98 L67 116
+          "/>
+        </svg>
+      </div>
+      <h1>Периодическая таблица <span>Менделеева</span></h1>
+      <p class="hero-sub">Нажми на любой элемент, чтобы открыть описание, свойства и силуэт</p>
+    </header>
+
+    <div id="status-bar">Подключаю модуль Rust (WebAssembly)...</div>
+
+    <div class="table-scroll">
+      <div id="table-grid" aria-label="Таблица Менделеева"></div>
+    </div>
+  </div>
+
+  <!-- Выезжающая снизу карточка элемента -->
+  <aside id="detail-panel" aria-hidden="true">
+    <div class="panel-handle"></div>
+    <button id="detail-close" type="button" aria-label="Закрыть">✕</button>
+    <div id="panel-body" class="panel-body">
+      <div class="silhouette-box">
+        <div id="detail-silhouette"></div>
+      </div>
+      <div class="detail-info">
+        <div class="detail-head">
+          <span id="detail-symbol">H</span>
+          <span id="detail-name-ru">Водород</span>
+          <span id="detail-name-en">Hydrogen</span>
+        </div>
+        <div class="detail-badges">
+          <span id="detail-number" class="badge">№ 1</span>
+          <span id="detail-mass" class="badge">Ar: 1.008</span>
+          <span id="detail-category" class="badge">Неметалл</span>
+        </div>
+        <div class="detail-cards">
+          <div class="info-card">
+            <div class="info-label">Описание</div>
+            <div id="detail-desc" class="info-text"></div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Свойство и особенность</div>
+            <div id="detail-feature" class="info-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script type="module">
+    const statusBar = document.getElementById("status-bar");
+
+    async function boot() {
+      if (typeof WebAssembly !== "object") {
+        statusBar.classList.add("error");
+        statusBar.textContent = "Ошибка: твой браузер не поддерживает WebAssembly.";
+        return;
+      }
+
+      try {
+        statusBar.textContent = "Загружаю данные 118 элементов...";
+        const wasmModule = await import("./pkg/mendeleev_table.js");
+        await wasmModule.default();
+      } catch (err) {
+        statusBar.classList.add("error");
+        statusBar.textContent = "Не удалось загрузить скомпилированный Rust-модуль (./pkg/mendeleev_table.js). Проверь, завершилась ли сборка в GitHub Actions.";
+        console.error(err);
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
