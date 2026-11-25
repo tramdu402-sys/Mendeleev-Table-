@@ -1,4 +1,4 @@
-name: Build Website and Windows App
+name: Website, PC & Android
 
 on:
   push:
@@ -11,61 +11,49 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "mendeleev-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
-  build-web:
+  deploy-web:
+    name: Website (GitHub Pages)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add WebAssembly target
-        run: rustup target add wasm32-unknown-unknown
-
-      - name: Install wasm-pack
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh || cargo install wasm-pack
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - name: Build Rust to WebAssembly
-        run: wasm-pack build --target web --release --out-dir pkg
-
       - name: Prepare site files
         run: |
           mkdir -p dist
-          cp index.html dist/
-          cp -r pkg dist/pkg
-          rm -f dist/pkg/.gitignore
+          cp index.html dist/index.html
           touch dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
-  deploy-web:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build-web
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
   build-windows-app:
+    name: PC App (Windows EXE)
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Windows Slint App
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build Windows App
         run: cargo build --release --bin mendeleev_app
 
       - name: Upload Windows EXE
@@ -73,3 +61,345 @@ jobs:
         with:
           name: Mendeleev-Windows-x64
           path: target/release/mendeleev_app.exe
+
+  build-android-apk:
+    name: Phone & Tablet App (Android APK)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build offline Android APK
+        run: |
+          set -euo pipefail
+
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          PLATFORM_DIR=$(ls -d "$SDK"/platforms/android-[0-9]* | sort -V | tail -n 1)
+          ANDROID_JAR="$PLATFORM_DIR/android.jar"
+          BUILD_TOOLS=$(find "$SDK/build-tools" -maxdepth 1 -mindepth 1 -type d | grep -v 'rc' | sort -V | tail -n 1)
+
+          rm -rf build
+          mkdir -p build/assets/three/build \
+                   build/assets/three/examples/jsm/environments \
+                   build/res/drawable \
+                   build/res/mipmap-anydpi-v26 \
+                   build/res/mipmap-xxxhdpi \
+                   build/src/com/mendeleev/table3d \
+                   build/classes \
+                   build/dex
+
+          cp index.html build/assets/index.html
+
+          # Fast direct download of only the 3 required Three.js r187 files (no npm overhead)
+          CDN="https://cdn.jsdelivr.net/npm/three@0.187.0"
+          curl -fsSL --retry 3 "$CDN/build/three.module.js" -o build/assets/three/build/three.module.js
+          curl -fsSL --retry 3 "$CDN/build/three.core.js" -o build/assets/three/build/three.core.js
+          curl -fsSL --retry 3 "$CDN/examples/jsm/environments/RoomEnvironment.js" -o build/assets/three/examples/jsm/environments/RoomEnvironment.js
+
+          # Fallback PNG icon
+          python3 - <<'PY'
+          import struct, zlib
+          w = h = 192
+          rows = []
+          for y in range(h):
+              row = bytearray([0])
+              for x in range(w):
+                  border = (20 <= x < 172 and 20 <= y < 172) and (x < 28 or x >= 164 or y < 28 or y >= 164)
+                  row.extend((255, 69, 0, 255) if border else (0, 0, 0, 255))
+              rows.append(bytes(row))
+          def chunk(t, d):
+              return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+          png = b"\x89PNG\r\n\x1a\n"
+          png += chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+          png += chunk(b"IDAT", zlib.compress(b"".join(rows), 9))
+          png += chunk(b"IEND", b"")
+          with open("build/res/mipmap-xxxhdpi/ic_launcher.png", "wb") as f:
+              f.write(png)
+          PY
+
+          cat <<'EOF' > build/res/drawable/ic_launcher_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#000000" />
+          </shape>
+          EOF
+
+          cat <<'EOF' > build/res/drawable/ic_launcher_fg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:pathData="M28,28 H80 V80 H28 Z"
+                  android:strokeColor="#FF4500"
+                  android:strokeWidth="3" />
+              <path
+                  android:pathData="M37,68 V40 L54,57 L71,40 V68"
+                  android:strokeColor="#F2F2F2"
+                  android:strokeWidth="5"
+                  android:strokeLineCap="square"
+                  android:strokeLineJoin="miter" />
+              <path
+                  android:pathData="M54,28 V21 M54,87 V80 M21,54 H28 M80,54 H87"
+                  android:strokeColor="#FF4500"
+                  android:strokeWidth="2.5" />
+          </vector>
+          EOF
+
+          cat <<'EOF' > build/res/mipmap-anydpi-v26/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_bg" />
+              <foreground android:drawable="@drawable/ic_launcher_fg" />
+          </adaptive-icon>
+          EOF
+
+          cat <<'EOF' > build/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.mendeleev.table3d"
+              android:versionCode="3"
+              android:versionName="3.0">
+
+              <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+
+              <application
+                  android:label="Менделеев 3D"
+                  android:icon="@mipmap/ic_launcher"
+                  android:hardwareAccelerated="true"
+                  android:theme="@android:style/Theme.Material.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:windowSoftInputMode="adjustNothing"
+                      android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat <<'EOF' > build/src/com/mendeleev/table3d/MainActivity.java
+          package com.mendeleev.table3d;
+
+          import android.app.Activity;
+          import android.graphics.Color;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.view.HapticFeedbackConstants;
+          import android.view.View;
+          import android.view.Window;
+          import android.view.WindowInsetsController;
+          import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.ValueCallback;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import java.io.ByteArrayInputStream;
+          import java.io.InputStream;
+          import java.util.HashMap;
+          import java.util.Map;
+
+          public class MainActivity extends Activity {
+              private WebView webView;
+              private static final String APP_ORIGIN = "https://mendeleev.local/";
+              private static final String THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.187.0/";
+
+              private class AppBridge {
+                  @JavascriptInterface
+                  public void tick() {
+                      if (webView != null) {
+                          webView.post(new Runnable() {
+                              @Override
+                              public void run() {
+                                  webView.performHapticFeedback(
+                                      HapticFeedbackConstants.CLOCK_TICK,
+                                      HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                                  );
+                              }
+                          });
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public void setTheme(final String theme) {
+                      runOnUiThread(new Runnable() {
+                          @Override
+                          public void run() {
+                              boolean light = "light".equals(theme);
+                              int bg = light ? Color.WHITE : Color.BLACK;
+                              Window w = getWindow();
+                              w.setStatusBarColor(bg);
+                              w.setNavigationBarColor(bg);
+                              if (webView != null) webView.setBackgroundColor(bg);
+                              if (Build.VERSION.SDK_INT >= 30) {
+                                  WindowInsetsController ctrl = w.getInsetsController();
+                                  if (ctrl != null) {
+                                      int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                               | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                                      ctrl.setSystemBarsAppearance(light ? mask : 0, mask);
+                                  }
+                              } else {
+                                  View decor = w.getDecorView();
+                                  int flags = decor.getSystemUiVisibility();
+                                  int lightFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | 0x00000010;
+                                  decor.setSystemUiVisibility(light ? (flags | lightFlags) : (flags & ~lightFlags));
+                              }
+                          }
+                      });
+                  }
+              }
+
+              private WebResourceResponse assetResponse(String assetPath, String mime) {
+                  try {
+                      InputStream is = getAssets().open(assetPath);
+                      Map<String, String> headers = new HashMap<>();
+                      headers.put("Access-Control-Allow-Origin", "*");
+                      headers.put("Cache-Control", "no-cache");
+                      return new WebResourceResponse(mime, "UTF-8", 200, "OK", headers, is);
+                  } catch (Exception e) {
+                      return null;
+                  }
+              }
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  Window window = getWindow();
+                  window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                  window.setStatusBarColor(Color.BLACK);
+                  window.setNavigationBarColor(Color.BLACK);
+
+                  webView = new WebView(this);
+                  webView.setBackgroundColor(Color.BLACK);
+                  webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+                  webView.setVerticalScrollBarEnabled(false);
+                  webView.setHorizontalScrollBarEnabled(false);
+                  webView.setHapticFeedbackEnabled(true);
+
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setBuiltInZoomControls(false);
+                  settings.setDisplayZoomControls(false);
+                  settings.setUseWideViewPort(true);
+                  settings.setLoadWithOverviewMode(true);
+
+                  webView.addJavascriptInterface(new AppBridge(), "AndroidHaptics");
+
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                          String url = request.getUrl().toString();
+                          if (url.startsWith(APP_ORIGIN)) {
+                              if (url.endsWith("favicon.ico")) {
+                                  return new WebResourceResponse("image/x-icon", "UTF-8", 204, "No Content", null, new ByteArrayInputStream(new byte[0]));
+                              }
+                              return assetResponse("index.html", "text/html");
+                          }
+                          if (url.startsWith(THREE_CDN)) {
+                              String subPath = url.substring(THREE_CDN.length());
+                              int q = subPath.indexOf('?');
+                              if (q >= 0) subPath = subPath.substring(0, q);
+                              return assetResponse("three/" + subPath, "application/javascript");
+                          }
+                          return super.shouldInterceptRequest(view, request);
+                      }
+                  });
+
+                  setContentView(webView);
+                  webView.loadUrl(APP_ORIGIN + "index.html");
+              }
+
+              @Override
+              public void onBackPressed() {
+                  webView.evaluateJavascript(
+                      "(function(){" +
+                      "  var sm=document.getElementById('settingsModal');" +
+                      "  if(sm && sm.classList.contains('open')){ document.getElementById('settingsClose').click(); return 'handled'; }" +
+                      "  var fs=document.getElementById('fsPortal');" +
+                      "  if(fs && fs.classList.contains('open')){ document.getElementById('btnExpand').click(); return 'handled'; }" +
+                      "  var dv=document.getElementById('detailView');" +
+                      "  if(dv && dv.classList.contains('is-visible')){ document.getElementById('btnClose').click(); return 'handled'; }" +
+                      "  return 'exit';" +
+                      "})()",
+                      new ValueCallback<String>() {
+                          @Override
+                          public void onReceiveValue(String val) {
+                              if (!"\"handled\"".equals(val)) {
+                                  MainActivity.super.onBackPressed();
+                              }
+                          }
+                      }
+                  );
+              }
+
+              @Override
+              protected void onPause() {
+                  super.onPause();
+                  if (webView != null) webView.onPause();
+              }
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  if (webView != null) webView.onResume();
+              }
+
+              @Override
+              protected void onDestroy() {
+                  if (webView != null) webView.destroy();
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+          "$BUILD_TOOLS/aapt2" compile --dir build/res -o build/res.zip
+          "$BUILD_TOOLS/aapt2" link \
+            -I "$ANDROID_JAR" \
+            --manifest build/AndroidManifest.xml \
+            -A build/assets \
+            -o build/unsigned.apk \
+            build/res.zip
+
+          javac -source 8 -target 8 -cp "$ANDROID_JAR" -d build/classes \
+            build/src/com/mendeleev/table3d/MainActivity.java
+          "$BUILD_TOOLS/d8" --lib "$ANDROID_JAR" --min-api 24 --output build/dex \
+            build/classes/com/mendeleev/table3d/*.class
+          zip -j -u build/unsigned.apk build/dex/classes.dex
+
+          "$BUILD_TOOLS/zipalign" -p -f 4 build/unsigned.apk build/aligned.apk
+          keytool -genkeypair -keystore build/mendeleev.keystore \
+            -storepass mendeleev123 -alias mendeleev -keypass mendeleev123 \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Mendeleev3D, O=Mendeleev, C=RU"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks build/mendeleev.keystore \
+            --ks-key-alias mendeleev \
+            --ks-pass pass:mendeleev123 \
+            --key-pass pass:mendeleev123 \
+            --out Mendeleev-3D.apk \
+            build/aligned.apk
+          "$BUILD_TOOLS/apksigner" verify Mendeleev-3D.apk
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mendeleev-3D-Android-APK
+          path: Mendeleev-3D.apk
