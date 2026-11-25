@@ -8,8 +8,10 @@ use slint::{ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
 slint::slint! {
+    #[edition = "1.19"]
+
     export struct ElementItem {
-        num: int,
+        num: string,
         sym: string,
         ru: string,
         en: string,
@@ -31,7 +33,7 @@ slint::slint! {
         in property <string> error-text: "";
         in-out property <int> selected-index: -1;
         in-out property <ElementItem> selected-item: {
-            num: 1,
+            num: "1",
             sym: "H",
             ru: "Водород",
             en: "Hydrogen",
@@ -82,8 +84,8 @@ slint::slint! {
 
             Flickable {
                 vertical-stretch: 1;
-                viewport-width: 1240px;
-                viewport-height: 776px;
+                content-width: 1240px;
+                content-height: 776px;
 
                 for el[idx] in root.elements : Rectangle {
                     x: (el.col - 1) * 68px + 8px;
@@ -111,7 +113,7 @@ slint::slint! {
 
                         HorizontalLayout {
                             Text {
-                                text: "\{el.num}";
+                                text: el.num;
                                 color: #ff9f43;
                                 font-size: 10px;
                                 font-weight: 700;
@@ -119,7 +121,7 @@ slint::slint! {
                             Rectangle { horizontal-stretch: 1; }
                             Text {
                                 text: el.mass;
-                                color: #8e8e93;
+                                color: rgb(142, 142, 147);
                                 font-size: 8px;
                                 overflow: elide;
                             }
@@ -141,7 +143,7 @@ slint::slint! {
 
                         Text {
                             text: el.en;
-                            color: #8e8e93;
+                            color: rgb(142, 142, 147);
                             font-size: 7.5px;
                             overflow: elide;
                         }
@@ -177,8 +179,8 @@ slint::slint! {
                             vertical-alignment: center;
                         }
                         Text {
-                            text: "(\{root.selected-item.en})";
-                            color: #8e8e93;
+                            text: "(" + root.selected-item.en + ")";
+                            color: rgb(142, 142, 147);
                             font-size: 14px;
                             vertical-alignment: center;
                         }
@@ -224,7 +226,7 @@ slint::slint! {
                                 padding-top: 4px;
                                 padding-bottom: 4px;
                                 Text {
-                                    text: "№ \{root.selected-item.num}";
+                                    text: "№ " + root.selected-item.num;
                                     color: #ffb974;
                                     font-size: 12px;
                                     font-weight: 600;
@@ -241,7 +243,7 @@ slint::slint! {
                                 padding-top: 4px;
                                 padding-bottom: 4px;
                                 Text {
-                                    text: "Ar: \{root.selected-item.mass}";
+                                    text: "Ar: " + root.selected-item.mass;
                                     color: #ffb974;
                                     font-size: 12px;
                                     font-weight: 600;
@@ -337,7 +339,7 @@ fn main() -> Result<(), slint::PlatformError> {
     let items: Vec<ElementItem> = ELEMENTS
         .iter()
         .map(|e| ElementItem {
-            num: e.num as i32,
+            num: SharedString::from(e.num.to_string()),
             sym: SharedString::from(e.sym),
             ru: SharedString::from(e.ru),
             en: SharedString::from(e.en),
