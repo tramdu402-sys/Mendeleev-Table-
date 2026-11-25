@@ -44,23 +44,337 @@ jobs:
         uses: actions/deploy-pages@v4
 
   build-windows-app:
-    name: PC App (Windows EXE)
+    name: PC App (Windows EXE · C++ WebView2)
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+      - name: Setup MSVC x64
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      - name: Build Windows App
-        run: cargo build --release --bin mendeleev_app
+      - name: Build offline native Windows EXE
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (Test-Path build_win) { Remove-Item -Recurse -Force build_win }
+          New-Item -ItemType Directory -Force -Path build_win | Out-Null
+
+          Copy-Item index.html build_win\index.html
+
+          # Download Three.js core files for 100% offline 3D
+          $cdn = "https://cdn.jsdelivr.net/npm/three@0.187.0/build"
+          curl.exe -fsSL --retry 3 "$cdn/three.module.js" -o build_win\three.module.js
+          curl.exe -fsSL --retry 3 "$cdn/three.core.js" -o build_win\three.core.js
+
+          # Download official Microsoft.Web.WebView2 SDK (header + static loader)
+          curl.exe -fsSL --retry 3 "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" -o build_win\wv2.zip
+          Expand-Archive -Path build_win\wv2.zip -DestinationPath build_win\wv2 -Force
+
+          @'
+          import struct, zlib
+          w = h = 256
+          rows = []
+          for y in range(h):
+              row = bytearray([0])
+              for x in range(w):
+                  in_box = 24 <= x < 232 and 24 <= y < 232
+                  border = in_box and (x < 34 or x >= 222 or y < 34 or y >= 222)
+                  m_left = 74 <= x < 92 and 76 <= y < 182
+                  m_right = 164 <= x < 182 and 76 <= y < 182
+                  diag_l = 76 <= y < 142 and abs((x - 83) - (y - 76) * 0.72) < 9.5 and x <= 128
+                  diag_r = 76 <= y < 142 and abs((173 - x) - (y - 76) * 0.72) < 9.5 and x >= 128
+                  if m_left or m_right or diag_l or diag_r:
+                      row.extend((252, 250, 255, 255))
+                  elif border:
+                      row.extend((234, 92, 42, 255))
+                  else:
+                      row.extend((0, 0, 0, 255))
+              rows.append(bytes(row))
+          def chunk(t, d):
+              return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+          png = b"\x89PNG\r\n\x1a\n"
+          png += chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+          png += chunk(b"IDAT", zlib.compress(b"".join(rows), 9))
+          png += chunk(b"IEND", b"")
+          ico = struct.pack("<HHH", 0, 1, 1)
+          ico += struct.pack("<BBBBHHII", 0, 0, 0, 0, 1, 32, len(png), 22)
+          ico += png
+          with open("build_win/app.ico", "wb") as f:
+              f.write(ico)
+          '@ | Set-Content -Encoding UTF8 build_win\make_ico.py
+
+          python build_win\make_ico.py
+
+          @'
+          1 ICON "app.ico"
+          101 RCDATA "index.html"
+          102 RCDATA "three.module.js"
+          103 RCDATA "three.core.js"
+          '@ | Set-Content -Encoding ASCII build_win\app.rc
+
+          @'
+          #include <windows.h>
+          #include <dwmapi.h>
+          #include <shlobj.h>
+          #include <shlwapi.h>
+          #include <objbase.h>
+          #include <string>
+          #include "WebView2.h"
+
+          static HWND g_hwnd = nullptr;
+          static ICoreWebView2Environment* g_env = nullptr;
+          static ICoreWebView2Controller* g_controller = nullptr;
+          static ICoreWebView2* g_webview = nullptr;
+
+          template <typename Interface>
+          class ComCallback : public Interface {
+              LONG refCount_ = 1;
+          public:
+              virtual ~ComCallback() = default;
+              HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+                  if (!ppv) return E_POINTER;
+                  if (riid == IID_IUnknown || riid == __uuidof(Interface)) {
+                      *ppv = static_cast<Interface*>(this);
+                      AddRef();
+                      return S_OK;
+                  }
+                  *ppv = nullptr;
+                  return E_NOINTERFACE;
+              }
+              ULONG STDMETHODCALLTYPE AddRef() override {
+                  return static_cast<ULONG>(InterlockedIncrement(&refCount_));
+              }
+              ULONG STDMETHODCALLTYPE Release() override {
+                  ULONG c = static_cast<ULONG>(InterlockedDecrement(&refCount_));
+                  if (c == 0) delete this;
+                  return c;
+              }
+          };
+
+          static IStream* LoadEmbeddedResource(int resId) {
+              HMODULE mod = GetModuleHandleW(nullptr);
+              HRSRC hRes = FindResourceW(mod, MAKEINTRESOURCEW(resId), RT_RCDATA);
+              if (!hRes) return nullptr;
+              HGLOBAL hData = LoadResource(mod, hRes);
+              if (!hData) return nullptr;
+              DWORD size = SizeofResource(mod, hRes);
+              const BYTE* ptr = static_cast<const BYTE*>(LockResource(hData));
+              if (!ptr || size == 0) return nullptr;
+              return SHCreateMemStream(ptr, size);
+          }
+
+          class ResourceHandler : public ComCallback<ICoreWebView2WebResourceRequestedEventHandler> {
+          public:
+              HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2*, ICoreWebView2WebResourceRequestedEventArgs* args) override {
+                  if (!g_env || !args) return S_OK;
+                  ICoreWebView2WebResourceRequest* req = nullptr;
+                  if (FAILED(args->get_Request(&req)) || !req) return S_OK;
+
+                  LPWSTR uriRaw = nullptr;
+                  if (SUCCEEDED(req->get_Uri(&uriRaw)) && uriRaw) {
+                      std::wstring uri(uriRaw);
+                      CoTaskMemFree(uriRaw);
+
+                      int resId = 0;
+                      const wchar_t* headers = L"";
+                      int status = 200;
+                      const wchar_t* reason = L"OK";
+
+                      if (uri.find(L"https://mendeleev.local/") == 0) {
+                          if (uri.find(L"favicon.ico") != std::wstring::npos) {
+                              status = 204;
+                              reason = L"No Content";
+                          } else {
+                              resId = 101;
+                              headers = L"Content-Type: text/html; charset=utf-8\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-cache";
+                          }
+                      } else if (uri.find(L"three.module.js") != std::wstring::npos) {
+                          resId = 102;
+                          headers = L"Content-Type: application/javascript; charset=utf-8\r\nAccess-Control-Allow-Origin: *";
+                      } else if (uri.find(L"three.core.js") != std::wstring::npos) {
+                          resId = 103;
+                          headers = L"Content-Type: application/javascript; charset=utf-8\r\nAccess-Control-Allow-Origin: *";
+                      }
+
+                      if (status == 204 || resId != 0) {
+                          IStream* stream = resId ? LoadEmbeddedResource(resId) : nullptr;
+                          ICoreWebView2WebResourceResponse* resp = nullptr;
+                          if (SUCCEEDED(g_env->CreateWebResourceResponse(stream, status, reason, headers, &resp)) && resp) {
+                              args->put_Response(resp);
+                              resp->Release();
+                          }
+                          if (stream) stream->Release();
+                      }
+                  }
+                  req->Release();
+                  return S_OK;
+              }
+          };
+
+          class ControllerHandler : public ComCallback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler> {
+          public:
+              HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) override {
+                  if (FAILED(result) || !controller) return S_OK;
+
+                  g_controller = controller;
+                  g_controller->AddRef();
+
+                  ICoreWebView2Controller2* ctrl2 = nullptr;
+                  if (SUCCEEDED(g_controller->QueryInterface(__uuidof(ICoreWebView2Controller2), reinterpret_cast<void**>(&ctrl2))) && ctrl2) {
+                      COREWEBVIEW2_COLOR bg = { 255, 0, 0, 0 };
+                      ctrl2->put_DefaultBackgroundColor(bg);
+                      ctrl2->Release();
+                  }
+
+                  RECT bounds;
+                  GetClientRect(g_hwnd, &bounds);
+                  g_controller->put_Bounds(bounds);
+                  g_controller->put_IsVisible(TRUE);
+
+                  if (SUCCEEDED(g_controller->get_CoreWebView2(&g_webview)) && g_webview) {
+                      ICoreWebView2Settings* settings = nullptr;
+                      if (SUCCEEDED(g_webview->get_Settings(&settings)) && settings) {
+                          settings->put_AreDefaultContextMenusEnabled(FALSE);
+                          settings->put_AreDevToolsEnabled(FALSE);
+                          settings->put_IsStatusBarEnabled(FALSE);
+                          settings->put_IsZoomControlEnabled(FALSE);
+                          settings->Release();
+                      }
+
+                      g_webview->AddWebResourceRequestedFilter(L"https://mendeleev.local/*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
+                      g_webview->AddWebResourceRequestedFilter(L"https://cdn.jsdelivr.net/npm/three@0.187.0/*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
+
+                      EventRegistrationToken token;
+                      auto* resHandler = new ResourceHandler();
+                      g_webview->add_WebResourceRequested(resHandler, &token);
+                      resHandler->Release();
+
+                      g_webview->Navigate(L"https://mendeleev.local/index.html");
+                  }
+                  return S_OK;
+              }
+          };
+
+          class EnvironmentHandler : public ComCallback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler> {
+          public:
+              HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Environment* env) override {
+                  if (FAILED(result) || !env) {
+                      MessageBoxW(
+                          g_hwnd,
+                          L"Для запуска требуется Microsoft Edge WebView2 Runtime.\nСкачать можно с официального сайта Microsoft.",
+                          L"Менделеев 3D",
+                          MB_ICONERROR | MB_OK
+                      );
+                      PostQuitMessage(1);
+                      return S_OK;
+                  }
+                  g_env = env;
+                  g_env->AddRef();
+
+                  auto* ctrlHandler = new ControllerHandler();
+                  g_env->CreateCoreWebView2Controller(g_hwnd, ctrlHandler);
+                  ctrlHandler->Release();
+                  return S_OK;
+              }
+          };
+
+          static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+              switch (msg) {
+              case WM_SIZE:
+                  if (g_controller) {
+                      RECT bounds;
+                      GetClientRect(hwnd, &bounds);
+                      g_controller->put_Bounds(bounds);
+                  }
+                  return 0;
+              case WM_GETMINMAXINFO: {
+                  auto* mmi = reinterpret_cast<MINMAXINFO*>(lParam);
+                  mmi->ptMinTrackSize.x = 760;
+                  mmi->ptMinTrackSize.y = 540;
+                  return 0;
+              }
+              case WM_DESTROY:
+                  if (g_webview) { g_webview->Release(); g_webview = nullptr; }
+                  if (g_controller) { g_controller->Close(); g_controller->Release(); g_controller = nullptr; }
+                  if (g_env) { g_env->Release(); g_env = nullptr; }
+                  PostQuitMessage(0);
+                  return 0;
+              }
+              return DefWindowProcW(hwnd, msg, wParam, lParam);
+          }
+
+          int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
+              using SetDpiCtxFn = BOOL (WINAPI*)(HANDLE);
+              if (auto fn = reinterpret_cast<SetDpiCtxFn>(GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetProcessDpiAwarenessContext"))) {
+                  fn(reinterpret_cast<HANDLE>(-4));
+              } else {
+                  SetProcessDPIAware();
+              }
+
+              CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+              WNDCLASSEXW wc = {};
+              wc.cbSize = sizeof(wc);
+              wc.lpfnWndProc = WndProc;
+              wc.hInstance = hInstance;
+              wc.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(1));
+              wc.hIconSm = wc.hIcon;
+              wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+              wc.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+              wc.lpszClassName = L"Mendeleev3DWindow";
+              RegisterClassExW(&wc);
+
+              g_hwnd = CreateWindowExW(
+                  0, wc.lpszClassName, L"МЕНДЕЛЕЕВ // 3D · 118",
+                  WS_OVERLAPPEDWINDOW,
+                  CW_USEDEFAULT, CW_USEDEFAULT, 1280, 820,
+                  nullptr, nullptr, hInstance, nullptr
+              );
+
+              BOOL dark = TRUE;
+              DwmSetWindowAttribute(g_hwnd, 20, &dark, sizeof(dark));
+              DwmSetWindowAttribute(g_hwnd, 19, &dark, sizeof(dark));
+
+              ShowWindow(g_hwnd, nCmdShow);
+              UpdateWindow(g_hwnd);
+
+              WCHAR appData[MAX_PATH] = {};
+              SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, appData);
+              std::wstring userDataDir = std::wstring(appData) + L"\\Mendeleev3D\\WebView2";
+
+              auto* envHandler = new EnvironmentHandler();
+              CreateCoreWebView2EnvironmentWithOptions(nullptr, userDataDir.c_str(), nullptr, envHandler);
+              envHandler->Release();
+
+              MSG msg;
+              while (GetMessageW(&msg, nullptr, 0, 0)) {
+                  TranslateMessage(&msg);
+                  DispatchMessageW(&msg);
+              }
+
+              CoUninitialize();
+              return static_cast<int>(msg.wParam);
+          }
+          '@ | Set-Content -Encoding UTF8 build_win\main.cpp
+
+          rc /nologo build_win\app.rc
+          cl /nologo /O2 /MT /EHsc /utf-8 /DUNICODE /D_UNICODE `
+            /Ibuild_win\wv2\build\native\include `
+            build_win\main.cpp build_win\app.res `
+            /Fe:Mendeleev-3D.exe `
+            /link /SUBSYSTEM:WINDOWS `
+            build_win\wv2\build\native\x64\WebView2LoaderStatic.lib `
+            user32.lib gdi32.lib ole32.lib oleaut32.lib shell32.lib shlwapi.lib advapi32.lib version.lib dwmapi.lib
 
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
           name: Mendeleev-Windows-x64
-          path: target/release/mendeleev_app.exe
+          path: Mendeleev-3D.exe
 
   build-android-apk:
     name: Phone & Tablet App (Android APK)
@@ -86,7 +400,6 @@ jobs:
 
           rm -rf build
           mkdir -p build/assets/three/build \
-                   build/assets/three/examples/jsm/environments \
                    build/res/drawable \
                    build/res/mipmap-anydpi-v26 \
                    build/res/mipmap-xxxhdpi \
@@ -96,11 +409,10 @@ jobs:
 
           cp index.html build/assets/index.html
 
-          # Fast direct download of only the 3 required Three.js r187 files (no npm overhead)
+          # Download only the 2 required Three.js core files for offline 3D
           CDN="https://cdn.jsdelivr.net/npm/three@0.187.0"
           curl -fsSL --retry 3 "$CDN/build/three.module.js" -o build/assets/three/build/three.module.js
           curl -fsSL --retry 3 "$CDN/build/three.core.js" -o build/assets/three/build/three.core.js
-          curl -fsSL --retry 3 "$CDN/examples/jsm/environments/RoomEnvironment.js" -o build/assets/three/examples/jsm/environments/RoomEnvironment.js
 
           # Fallback PNG icon
           python3 - <<'PY'
@@ -111,7 +423,7 @@ jobs:
               row = bytearray([0])
               for x in range(w):
                   border = (20 <= x < 172 and 20 <= y < 172) and (x < 28 or x >= 164 or y < 28 or y >= 164)
-                  row.extend((255, 69, 0, 255) if border else (0, 0, 0, 255))
+                  row.extend((234, 92, 42, 255) if border else (0, 0, 0, 255))
               rows.append(bytes(row))
           def chunk(t, d):
               return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
@@ -139,17 +451,17 @@ jobs:
               android:viewportHeight="108">
               <path
                   android:pathData="M28,28 H80 V80 H28 Z"
-                  android:strokeColor="#FF4500"
+                  android:strokeColor="#EA5C2A"
                   android:strokeWidth="3" />
               <path
                   android:pathData="M37,68 V40 L54,57 L71,40 V68"
-                  android:strokeColor="#F2F2F2"
+                  android:strokeColor="#FCFAFF"
                   android:strokeWidth="5"
                   android:strokeLineCap="square"
                   android:strokeLineJoin="miter" />
               <path
                   android:pathData="M54,28 V21 M54,87 V80 M21,54 H28 M80,54 H87"
-                  android:strokeColor="#FF4500"
+                  android:strokeColor="#EA5C2A"
                   android:strokeWidth="2.5" />
           </vector>
           EOF
@@ -166,8 +478,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.mendeleev.table3d"
-              android:versionCode="3"
-              android:versionName="3.0">
+              android:versionCode="4"
+              android:versionName="4.0">
 
               <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
 
@@ -242,7 +554,7 @@ jobs:
                           @Override
                           public void run() {
                               boolean light = "light".equals(theme);
-                              int bg = light ? Color.WHITE : Color.BLACK;
+                              int bg = light ? Color.parseColor("#FCFAFF") : Color.BLACK;
                               Window w = getWindow();
                               w.setStatusBarColor(bg);
                               w.setNavigationBarColor(bg);
