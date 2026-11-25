@@ -1,6 +1,6 @@
 mod elements;
 
-use elements::{ChemElement, ELEMENTS};
+use elements::{Element as ChemElement, ELEMENTS};
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -294,42 +294,41 @@ fn append_grid_item(
 }
 
 fn silhouette_svg(el: &ChemElement) -> String {
-    let icon = el.icon;
-    let body = if icon.contains("gas") || icon.contains("cloud") {
-        r##"<circle cx="50" cy="50" r="30" fill="none" stroke="#ff9f43" stroke-width="3" stroke-dasharray="6 4"/>
-            <circle cx="50" cy="50" r="18" fill="#ff9f43" fill-opacity="0.22" stroke="#ffb974" stroke-width="2"/>
-            <circle cx="38" cy="40" r="4" fill="#ffb974"/>
-            <circle cx="63" cy="57" r="3" fill="#ff9f43"/>"##
-    } else if icon.contains("noble") || icon.contains("lamp") || icon.contains("bulb") {
+    let body = if el.cat == "Благородный газ" {
         r##"<path d="M36 62 C26 52 28 24 50 24 C72 24 74 52 64 62 L60 72 L40 72 Z" fill="#ff9f43" fill-opacity="0.2" stroke="#ff9f43" stroke-width="3"/>
             <line x1="42" y1="78" x2="58" y2="78" stroke="#ffb974" stroke-width="3" stroke-linecap="round"/>
             <line x1="45" y1="84" x2="55" y2="84" stroke="#ff9f43" stroke-width="3" stroke-linecap="round"/>
             <circle cx="50" cy="46" r="8" fill="#ffb974"/>"##
-    } else if icon.contains("radio") || icon.contains("nuclear") {
+    } else if matches!(el.num, 1 | 7 | 8 | 9 | 17) {
+        r##"<circle cx="50" cy="50" r="30" fill="none" stroke="#ff9f43" stroke-width="3" stroke-dasharray="6 4"/>
+            <circle cx="50" cy="50" r="18" fill="#ff9f43" fill-opacity="0.22" stroke="#ffb974" stroke-width="2"/>
+            <circle cx="38" cy="40" r="4" fill="#ffb974"/>
+            <circle cx="63" cy="57" r="3" fill="#ff9f43"/>"##
+    } else if matches!(el.num, 43 | 61) || el.num >= 84 {
         r##"<circle cx="50" cy="50" r="8" fill="#ff9f43"/>
             <path d="M50 50 L32 22 A34 34 0 0 1 68 22 Z" fill="#ff9f43" fill-opacity="0.75"/>
             <path d="M50 50 L82 54 A34 34 0 0 1 64 81 Z" fill="#ff9f43" fill-opacity="0.75"/>
             <path d="M50 50 L36 81 A34 34 0 0 1 18 54 Z" fill="#ff9f43" fill-opacity="0.75"/>
             <circle cx="50" cy="50" r="12" fill="#050505"/>
             <circle cx="50" cy="50" r="6" fill="#ffb974"/>"##
-    } else if icon.contains("liquid") || icon.contains("drop") {
+    } else if matches!(el.num, 31 | 35 | 80) {
         r##"<path d="M50 16 C50 16 74 46 74 62 A24 24 0 0 1 26 62 C26 46 50 16 50 16 Z" fill="#ff9f43" fill-opacity="0.25" stroke="#ff9f43" stroke-width="3"/>
             <path d="M38 62 A12 12 0 0 0 46 74" fill="none" stroke="#ffb974" stroke-width="3" stroke-linecap="round"/>"##
-    } else if icon.contains("crystal") || icon.contains("diamond") || icon.contains("gem") {
+    } else if matches!(el.num, 5 | 6 | 14 | 32) {
         r##"<polygon points="50,14 78,38 50,86 22,38" fill="#ff9f43" fill-opacity="0.22" stroke="#ff9f43" stroke-width="3"/>
             <polyline points="22,38 50,48 78,38" fill="none" stroke="#ffb974" stroke-width="2"/>
             <line x1="50" y1="14" x2="50" y2="86" stroke="#ffb974" stroke-width="2"/>"##
-    } else if icon.contains("metal") || icon.contains("ingot") || icon.contains("bar") {
-        r##"<polygon points="22,68 34,36 66,36 78,68" fill="#ff9f43" fill-opacity="0.24" stroke="#ff9f43" stroke-width="3"/>
-            <line x1="36" y1="46" x2="64" y2="46" stroke="#ffb974" stroke-width="2.5" stroke-linecap="round"/>"##
-    } else if icon.contains("battery") || icon.contains("bolt") || icon.contains("energy") {
+    } else if el.num == 3 {
         r##"<rect x="32" y="24" width="36" height="58" rx="6" fill="#ff9f43" fill-opacity="0.18" stroke="#ff9f43" stroke-width="3"/>
             <rect x="42" y="16" width="16" height="8" rx="2" fill="#ff9f43"/>
             <polygon points="53,34 40,54 50,54 47,70 60,48 50,48" fill="#ffb974"/>"##
-    } else if icon.contains("magnet") {
+    } else if matches!(el.num, 26 | 27 | 28 | 60) {
         r##"<path d="M30 24 V56 A20 20 0 0 0 70 56 V24 H58 V56 A8 8 0 0 1 42 56 V24 Z" fill="#ff9f43" fill-opacity="0.25" stroke="#ff9f43" stroke-width="3"/>
             <line x1="30" y1="36" x2="42" y2="36" stroke="#ffb974" stroke-width="3"/>
             <line x1="58" y1="36" x2="70" y2="36" stroke="#ffb974" stroke-width="3"/>"##
+    } else if el.cat.contains("металл") || el.cat == "Лантаноид" {
+        r##"<polygon points="22,68 34,36 66,36 78,68" fill="#ff9f43" fill-opacity="0.24" stroke="#ff9f43" stroke-width="3"/>
+            <line x1="36" y1="46" x2="64" y2="46" stroke="#ffb974" stroke-width="2.5" stroke-linecap="round"/>"##
     } else {
         r##"<ellipse cx="50" cy="50" rx="36" ry="14" fill="none" stroke="#ff9f43" stroke-width="2.5" transform="rotate(30 50 50)"/>
             <ellipse cx="50" cy="50" rx="36" ry="14" fill="none" stroke="#ff9f43" stroke-width="2.5" transform="rotate(-30 50 50)"/>
