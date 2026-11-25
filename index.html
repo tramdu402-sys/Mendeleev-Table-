@@ -4,18 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <title>МЕНДЕЛЕЕВ // 118</title>
+  <title>МЕНДЕЛЕЕВ // 3D · 118</title>
   <style>
     :root {
       --bg: #000000;
       --surface: #070707;
-      --surface-2: #0f0f0f;
-      --line: #222222;
-      --line-strong: #383838;
+      --line: #1e1e1e;
+      --line-strong: #343434;
       --accent: #FF4500;
-      --accent-dim: #7a2200;
+      --accent-dim: #7a2100;
       --text: #F2F2F2;
-      --muted: #7A7A7A;
+      --muted: #787878;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
       --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
       --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
@@ -49,7 +50,7 @@
 
     /* ===== TOP BAR ===== */
     .topbar {
-      flex: 0 0 40px;
+      flex: 0 0 38px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -57,6 +58,7 @@
       padding: 0 10px;
       border-bottom: 1px solid var(--line);
       background: var(--bg);
+      z-index: 40;
     }
 
     .brand {
@@ -68,17 +70,8 @@
       letter-spacing: 0.08em;
     }
 
-    .brand-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .brand-tag {
-      font-size: 10px;
-      color: var(--accent);
-      font-weight: 700;
-    }
+    .brand-title { font-size: 12px; font-weight: 800; color: var(--text); }
+    .brand-tag { font-size: 10px; font-weight: 700; color: var(--accent); }
 
     .controls {
       display: flex;
@@ -98,7 +91,7 @@
 
     .search {
       width: 100%;
-      height: 26px;
+      height: 25px;
       background: var(--surface);
       border: 1px solid var(--line-strong);
       color: var(--text);
@@ -108,22 +101,16 @@
       outline: none;
       border-radius: 0;
       appearance: none;
+      transition: border-color 180ms var(--ease-out);
     }
 
-    .search::placeholder {
-      color: var(--muted);
-    }
-
-    .search:focus {
-      border-color: var(--accent);
-    }
+    .search::placeholder { color: var(--muted); }
+    .search:focus { border-color: var(--accent); }
 
     .btn-clear {
       position: absolute;
-      right: 0;
-      top: 0;
-      width: 24px;
-      height: 26px;
+      right: 0; top: 0;
+      width: 24px; height: 25px;
       background: transparent;
       border: none;
       color: var(--muted);
@@ -135,16 +122,11 @@
       justify-content: center;
     }
 
-    .btn-clear.visible {
-      display: flex;
-    }
-
-    .btn-clear:hover {
-      color: var(--accent);
-    }
+    .btn-clear.visible { display: flex; }
+    .btn-clear:hover { color: var(--accent); }
 
     .btn-icon {
-      height: 26px;
+      height: 25px;
       padding: 0 8px;
       background: var(--surface);
       border: 1px solid var(--line-strong);
@@ -157,14 +139,13 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      transition: border-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 140ms var(--ease-out);
     }
 
-    .btn-icon:hover, .btn-icon.active {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .btn-icon:active { transform: scale(0.94); }
+    .btn-icon:hover, .btn-icon.active { border-color: var(--accent); color: var(--accent); }
 
-    /* ===== MAIN WORKSPACE ===== */
+    /* ===== WORKSPACE ===== */
     .workspace {
       flex: 1;
       min-height: 0;
@@ -173,21 +154,24 @@
       overflow: hidden;
     }
 
-    /* ===== PERIODIC GRID ===== */
+    /* ===== 3D PERIODIC GRID ===== */
     .grid-stage {
       position: relative;
-      flex: 0 0 40dvh;
-      min-height: 205px;
-      max-height: 360px;
-      padding: 6px 4px;
+      flex: 0 0 32dvh;
+      min-height: 178px;
+      max-height: 290px;
+      padding: 8px 6px 6px;
       display: flex;
       align-items: stretch;
       justify-content: center;
       touch-action: none;
-      overflow: hidden;
+      overflow: visible;
+      z-index: 20;
+      perspective: 960px;
     }
 
     .ptable {
+      position: relative;
       width: 100%;
       height: 100%;
       display: grid;
@@ -195,6 +179,7 @@
       grid-template-rows: repeat(7, minmax(0, 1fr)) 5px repeat(2, minmax(0, 1fr));
       gap: 1px;
       background: var(--bg);
+      transform-style: preserve-3d;
     }
 
     .cell {
@@ -206,46 +191,46 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      overflow: hidden;
       min-width: 0;
       min-height: 0;
-      transition: background-color 0.08s linear, border-color 0.08s linear;
+      transform: translate3d(0, 0, 0) scale(1);
+      will-change: transform, opacity;
+      transition:
+        transform 340ms var(--ease-out),
+        background-color 200ms var(--ease-out),
+        border-color 200ms var(--ease-out),
+        opacity 220ms var(--ease-out),
+        box-shadow 300ms var(--ease-out);
     }
 
-    /* Subtle category structural markers (strict monochrome + orange) */
     .cell::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 1px;
       background: transparent;
+      pointer-events: none;
     }
 
-    .cell[data-cat="Щелочной металл"]::before { background: var(--accent); opacity: 0.9; }
+    .cell[data-cat="Щелочной металл"]::before { background: var(--accent); opacity: 0.92; }
     .cell[data-cat="Щёлочноземельный металл"]::before { background: var(--accent); opacity: 0.55; }
-    .cell[data-cat="Галоген"]::before { background: #ffffff; opacity: 0.7; }
-    .cell[data-cat="Благородный газ"] { background: #0c0c0c; border-color: #2c2c2c; }
+    .cell[data-cat="Галоген"]::before { background: #ffffff; opacity: 0.72; }
+    .cell[data-cat="Благородный газ"] { background: #0c0c0c; border-color: #2b2b2b; }
     .cell[data-cat="Неметалл"]::before { background: #a8a8a8; opacity: 0.5; }
-    .cell[data-cat="Полуметалл"]::before { background: #666666; opacity: 0.7; }
-    .cell[data-cat="Лантаноид"], .cell[data-cat="Актиноид"] { background: #050505; border-color: #1c1c1c; }
+    .cell[data-cat="Полуметалл"]::before { background: #666666; opacity: 0.72; }
+    .cell[data-cat="Лантаноид"], .cell[data-cat="Актиноид"] { background: #050505; border-color: #1b1b1b; }
 
-    .cell-num {
-      display: none;
-      font-family: var(--mono);
-      font-size: 9px;
-      line-height: 1;
-      color: var(--accent);
-    }
+    .cell-top { display: none; }
+    .cell-num { font-family: var(--mono); font-size: 9px; line-height: 1; color: var(--accent); }
+    .cell-mass { font-family: var(--mono); font-size: 8px; color: var(--muted); }
 
     .cell-sym {
-      font-family: var(--sans);
       font-size: clamp(8px, 2.35vw, 11px);
       font-weight: 700;
       line-height: 1;
       letter-spacing: -0.04em;
       color: var(--text);
+      transition: color 180ms var(--ease-out);
     }
 
     .cell-ru {
@@ -259,47 +244,53 @@
       width: 100%;
     }
 
-    .cell-mass {
-      display: none;
-      font-family: var(--mono);
-      font-size: 8px;
-      color: var(--muted);
+    .cell.axis-match {
+      background: #0d0603;
+      border-color: #2f1509;
     }
 
-    .cell:hover {
-      border-color: var(--accent);
-      background: #140802;
-      z-index: 2;
+    @media (hover: hover) {
+      .cell:hover:not(.active) {
+        border-color: var(--accent);
+        background: #160802;
+        transform: translate3d(0, -3px, 18px) scale(1.09);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.85);
+        z-index: 12;
+      }
     }
 
-    .cell.cat-match {
-      border-color: var(--accent);
-      background: #1a0900;
-    }
+    .cell.cat-match { border-color: var(--accent); background: #1a0900; }
 
     .cell.dimmed {
-      opacity: 0.2;
+      opacity: 0.16;
+      transform: translate3d(0, 0, -14px) scale(0.94);
+    }
+
+    .cell.near-active {
+      transform: translate3d(0, -1px, 8px) scale(1.04);
+      border-color: #541d05;
+      z-index: 6;
     }
 
     .cell.active {
       background: var(--accent) !important;
-      border-color: var(--accent) !important;
-      z-index: 4;
+      border-color: #ff9c75 !important;
+      transform: translate3d(0, -5px, 38px) scale(1.26) rotateX(6deg);
+      box-shadow: 0 4px 0 #7a2100, 0 12px 24px rgba(0, 0, 0, 0.95);
+      z-index: 30;
       opacity: 1 !important;
     }
 
     .cell.active .cell-sym,
     .cell.active .cell-num,
     .cell.active .cell-ru,
-    .cell.active .cell-mass {
-      color: #000000 !important;
-    }
+    .cell.active .cell-mass { color: #000000 !important; }
 
     .cell-marker {
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px dashed #262626;
+      border: 1px dashed #242424;
       background: #030303;
       color: var(--accent);
       font-family: var(--mono);
@@ -308,72 +299,77 @@
       pointer-events: none;
     }
 
-    /* Mobile scrub HUD inside grid empty space */
     .scrub-hud {
       grid-column: 3 / 13;
       grid-row: 1 / 4;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: flex-start;
       padding: 4px 8px;
       border: 1px solid #161616;
+      border-left: 2px solid var(--accent);
       background: #030303;
       pointer-events: none;
       overflow: hidden;
     }
 
-    .scrub-kicker {
-      font-family: var(--mono);
-      font-size: 8px;
-      color: var(--accent);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
+    .scrub-kicker { font-family: var(--mono); font-size: 8px; color: var(--accent); letter-spacing: 0.1em; }
     .scrub-main {
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 100%;
       margin-top: 2px;
     }
+    .scrub-sub { font-family: var(--mono); font-size: 8.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
 
-    .scrub-sub {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--muted);
-      margin-top: 2px;
-      white-space: nowrap;
-    }
+    .desktop-center { display: none; }
 
-    /* Desktop embedded inspector is hidden inside grid on mobile */
-    .desktop-center {
-      display: none;
-    }
-
-    /* ===== BOTTOM INSPECTOR (MOBILE DEFAULT) ===== */
+    /* ===== INSPECTOR ===== */
     .inspector {
+      position: relative;
       flex: 1;
       min-height: 0;
       border-top: 1px solid var(--accent);
       background: var(--bg);
-      display: flex;
-      flex-direction: column;
       overflow: hidden;
-      padding: 10px 12px;
+      perspective: 1100px;
+      z-index: 10;
     }
 
-    /* Portrait view (idle state) */
-    .portrait-view {
+    .inspector-shell {
+      position: relative;
       width: 100%;
       height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .panel-layer {
+      position: absolute;
+      inset: 8px 10px 10px;
+      will-change: transform, opacity;
+      transition: transform 360ms var(--ease-out), opacity 260ms var(--ease-out);
+    }
+
+    .panel-layer.is-hidden {
+      opacity: 0;
+      transform: translate3d(0, 16px, -55px) rotateX(-6deg) scale(0.95);
+      pointer-events: none;
+    }
+
+    .panel-layer.is-visible {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
+      pointer-events: auto;
+    }
+
+    /* ===== PORTRAIT VIEW ===== */
+    .portrait-view {
       display: grid;
-      grid-template-columns: minmax(120px, 46%) 1fr;
+      grid-template-columns: minmax(126px, 46%) 1fr;
       gap: 12px;
       align-items: center;
       overflow: hidden;
@@ -383,7 +379,6 @@
       position: relative;
       width: 100%;
       height: 100%;
-      max-height: 100%;
       border: 1px solid var(--line-strong);
       background: #000000;
       display: flex;
@@ -391,308 +386,275 @@
       justify-content: center;
       overflow: hidden;
       padding: 4px;
+      transform-style: preserve-3d;
+      transition: transform 280ms var(--ease-out);
     }
 
     .portrait-frame::before,
     .portrait-frame::after {
       content: "";
       position: absolute;
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-color: var(--accent);
       border-style: solid;
       pointer-events: none;
     }
 
-    .portrait-frame::before {
-      top: -1px;
-      left: -1px;
-      border-width: 2px 0 0 2px;
-    }
+    .portrait-frame::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .portrait-frame::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-    .portrait-frame::after {
-      bottom: -1px;
-      right: -1px;
-      border-width: 0 2px 2px 0;
-    }
+    .portrait-svg { width: 100%; height: 100%; max-width: 230px; display: block; }
 
-    .portrait-svg {
-      width: 100%;
-      height: 100%;
-      max-width: 220px;
-      max-height: 100%;
-      display: block;
-    }
+    .portrait-meta { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 0; }
+    .meta-index { font-family: var(--mono); font-size: 9.5px; color: var(--accent); letter-spacing: 0.14em; }
+    .meta-name { font-size: clamp(16px, 4.8vw, 24px); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; text-transform: uppercase; }
+    .meta-years { font-family: var(--mono); font-size: 10.5px; color: var(--muted); border-left: 2px solid var(--accent); padding-left: 8px; }
+    .meta-hint { font-size: 11.5px; line-height: 1.35; color: #bdbdbd; }
 
-    .portrait-meta {
+    .meta-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+    .stat-box { border: 1px solid var(--line); background: var(--surface); padding: 5px 6px; }
+    .stat-val { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+    .stat-lbl { font-family: var(--mono); font-size: 8px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+    /* ===== ELEMENT DETAIL + 3D ===== */
+    .detail-view {
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-      min-width: 0;
+      gap: 7px;
+      overflow: hidden;
+      perspective: 900px;
     }
 
-    .meta-index {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--accent);
-      letter-spacing: 0.14em;
+    .swap-card {
+      will-change: transform, opacity;
+      transform: translate3d(0, 0, 0) rotateX(0deg);
+      opacity: 1;
+      transition: transform 280ms var(--ease-out), opacity 220ms var(--ease-out);
     }
 
-    .meta-name {
-      font-size: clamp(16px, 4.8vw, 24px);
-      font-weight: 800;
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-      text-transform: uppercase;
+    .swap-card.phase-out {
+      opacity: 0;
+      transform: translate3d(0, 12px, -38px) rotateX(-7deg);
+      transition: transform 130ms var(--ease-in), opacity 120ms var(--ease-in);
     }
 
-    .meta-years {
+    .swap-card.phase-pre-in {
+      opacity: 0;
+      transform: translate3d(0, -10px, -28px) rotateX(6deg);
+      transition: none !important;
+    }
+
+    .detail-head { display: flex; align-items: stretch; gap: 8px; flex: 0 0 auto; }
+
+    .detail-badge {
+      width: 48px; height: 48px;
+      flex: 0 0 48px;
+      background: var(--accent);
+      color: #000000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px 5px;
+    }
+
+    .detail-num { font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
+    .detail-sym { font-size: 23px; font-weight: 900; line-height: 0.92; letter-spacing: -0.03em; }
+
+    .detail-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+    .detail-title-row { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; overflow: hidden; }
+    .detail-ru { font-size: clamp(16px, 4.6vw, 22px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; }
+    .detail-en { font-family: var(--mono); font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+
+    .detail-tags { display: flex; align-items: center; gap: 5px; flex-wrap: nowrap; overflow: hidden; }
+    .tag-pill { font-family: var(--mono); font-size: 9.5px; padding: 2px 6px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); white-space: nowrap; }
+    .tag-cat { cursor: pointer; border-color: var(--accent-dim); color: var(--accent); overflow: hidden; text-overflow: ellipsis; transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out); }
+    .tag-cat.active { background: var(--accent); color: #000000; border-color: var(--accent); font-weight: 700; }
+
+    .detail-nav { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; }
+    .nav-row { display: flex; gap: 3px; }
+    .nav-btn {
+      width: 26px; height: 22px;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      color: var(--text);
       font-family: var(--mono);
       font-size: 11px;
-      color: var(--muted);
-      border-left: 2px solid var(--accent);
-      padding-left: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 140ms var(--ease-out);
     }
+    .nav-btn:active { transform: scale(0.9); }
+    .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .nav-btn-close { width: 100%; height: 23px; font-size: 10px; }
 
-    .meta-hint {
-      font-size: 12px;
-      line-height: 1.35;
-      color: #bdbdbd;
-    }
-
-    .meta-stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 4px;
-      margin-top: 2px;
-    }
-
-    .stat-box {
-      border: 1px solid var(--line);
-      background: var(--surface);
-      padding: 5px 6px;
-    }
-
-    .stat-val {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .stat-lbl {
-      font-family: var(--mono);
-      font-size: 8px;
-      color: var(--muted);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    /* Element detail view */
-    .detail-view {
-      width: 100%;
-      height: 100%;
-      display: none;
+    .detail-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       overflow: hidden;
     }
 
-    .detail-view.visible {
+    /* ===== 3D SLOT + TOP-LEVEL FULLSCREEN PORTAL ===== */
+    .stage-3d-slot {
+      flex: 1 1 130px;
+      min-height: 96px;
+      position: relative;
       display: flex;
     }
 
-    .portrait-view.hidden {
+    .fs-portal {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0, 0, 0, 0);
       display: none;
+      transition: background-color 280ms var(--ease-out);
     }
 
-    .detail-head {
-      display: flex;
-      align-items: stretch;
-      gap: 10px;
-      flex: 0 0 auto;
+    .fs-portal.open { display: block; }
+    .fs-portal.backdrop { background: rgba(0, 0, 0, 1); }
+
+    .stage-3d {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--line-strong);
+      background: #000000;
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+      transform-origin: top left;
+      will-change: transform;
     }
 
-    .detail-badge {
-      width: 58px;
-      height: 58px;
-      flex: 0 0 58px;
-      background: var(--accent);
-      color: #000000;
+    .stage-3d:active { cursor: grabbing; }
+    .fs-portal .stage-3d { border: none; }
+
+    .stage-3d::before,
+    .stage-3d::after {
+      content: "";
+      position: absolute;
+      width: 10px; height: 10px;
+      border-color: var(--accent);
+      border-style: solid;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .stage-3d::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .stage-3d::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+    .fs-portal .stage-3d::before { top: 10px; left: 10px; }
+    .fs-portal .stage-3d::after { bottom: 10px; right: 10px; }
+
+    #canvas3d { width: 100%; height: 100%; display: block; }
+
+    .hud-3d-top {
+      position: absolute;
+      top: 6px; left: 7px; right: 6px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
       justify-content: space-between;
-      padding: 4px 6px;
+      gap: 5px;
+      pointer-events: none;
+      z-index: 6;
     }
 
-    .detail-num {
+    .fs-portal .hud-3d-top { top: 16px; left: 16px; right: 16px; }
+
+    .hud-3d-label {
       font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 800;
-      line-height: 1;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 2px 6px;
+      border-left: 2px solid var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .detail-sym {
-      font-size: 28px;
-      font-weight: 900;
-      line-height: 0.95;
-      letter-spacing: -0.03em;
+    .hud-3d-modes { display: flex; gap: 3px; pointer-events: auto; flex-shrink: 0; }
+
+    .mode-btn {
+      height: 21px;
+      padding: 0 6px;
+      background: rgba(8, 8, 8, 0.92);
+      border: 1px solid var(--line-strong);
+      color: #a4a4a4;
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: border-color 150ms var(--ease-out), background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out);
     }
 
-    .detail-titles {
-      flex: 1;
-      min-width: 0;
+    .mode-btn:active { transform: scale(0.92); }
+    .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #000000; }
+
+    .hud-3d-bottom {
+      position: absolute;
+      bottom: 5px; left: 8px; right: 8px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
       justify-content: space-between;
-    }
-
-    .detail-title-row {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .detail-ru {
-      font-size: clamp(18px, 5vw, 24px);
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -0.02em;
-    }
-
-    .detail-en {
+      gap: 8px;
+      pointer-events: none;
+      z-index: 6;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 8.5px;
       color: var(--muted);
     }
 
-    .detail-tags {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
+    .fs-portal .hud-3d-bottom { bottom: 16px; left: 16px; right: 16px; font-size: 10px; }
+    .hud-shells { color: #d0d0d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hud-shells b { color: var(--accent); font-weight: 700; }
+    .hud-angles { white-space: nowrap; color: #6c6c6c; }
 
-    .tag-pill {
-      font-family: var(--mono);
-      font-size: 10px;
-      padding: 2px 6px;
-      border: 1px solid var(--line-strong);
-      background: var(--surface);
-      color: var(--text);
-      white-space: nowrap;
-    }
-
-    .tag-cat {
-      cursor: pointer;
-      border-color: var(--accent-dim);
-      color: var(--accent);
-    }
-
-    .tag-cat.active {
-      background: var(--accent);
-      color: #000000;
-      border-color: var(--accent);
-      font-weight: 700;
-    }
-
-    .detail-nav {
+    /* ===== INFO CARD ===== */
+    .detail-info {
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      flex: 0 0 auto;
-    }
-
-    .nav-row {
-      display: flex;
-      gap: 4px;
-    }
-
-    .nav-btn {
-      width: 28px;
-      height: 27px;
-      background: var(--surface);
-      border: 1px solid var(--line-strong);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .nav-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .nav-btn-close {
-      width: 100%;
-      height: 27px;
-      font-size: 10px;
-      letter-spacing: 0.06em;
-    }
-
-    .detail-grid {
-      flex: 1;
-      min-height: 0;
-      display: grid;
-      grid-template-rows: 1fr 1fr;
-      gap: 8px;
+      gap: 5px;
     }
 
     .info-block {
       border: 1px solid var(--line);
       background: var(--surface);
-      padding: 8px 10px;
+      padding: 6px 9px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 4px;
-      min-height: 0;
-      overflow: hidden;
+      gap: 2px;
     }
 
-    .info-block.fact {
-      border-left: 2px solid var(--accent);
+    .info-block.fact { border-left: 2px solid var(--accent); }
+    .info-lbl { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); }
+    .info-txt { font-size: clamp(10.5px, 2.9vw, 12.2px); line-height: 1.3; color: #e4e4e4; user-select: text; -webkit-user-select: text; }
+
+    @media (max-height: 670px) and (max-width: 959px) {
+      .grid-stage { flex: 0 0 29dvh; min-height: 158px; }
+      .info-block { padding: 4px 8px; }
+      .info-txt { font-size: 10px; line-height: 1.24; }
     }
 
-    .info-lbl {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      color: var(--accent);
-      text-transform: uppercase;
-    }
-
-    .info-txt {
-      font-size: clamp(11.5px, 3.2vw, 13.5px);
-      line-height: 1.35;
-      color: #e4e4e4;
-      user-select: text;
-      -webkit-user-select: text;
-    }
-
-    /* ===== DESKTOP LAYOUT (ZERO SCROLL, INSPECTOR EMBEDDED IN CENTER GAP) ===== */
-    @media (min-width: 900px) and (min-height: 540px) {
-      .topbar {
-        flex: 0 0 42px;
-        padding: 0 16px;
-      }
-
-      .brand-title {
-        font-size: 13px;
-      }
+    /* ===== DESKTOP LAYOUT ===== */
+    @media (min-width: 960px) and (min-height: 580px) {
+      .topbar { flex: 0 0 42px; padding: 0 16px; }
+      .brand-title { font-size: 13px; }
 
       .grid-stage {
         flex: 1;
         min-height: 0;
         max-height: none;
-        padding: 10px 14px 12px;
+        padding: 12px 16px 14px;
+        perspective: 1300px;
       }
 
       .ptable {
@@ -700,110 +662,50 @@
         grid-template-rows: repeat(7, minmax(0, 1fr)) 10px repeat(2, minmax(0, 1fr));
       }
 
-      .cell {
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 4px 5px;
-      }
+      .cell { align-items: flex-start; justify-content: space-between; padding: 4px 5px; }
+      .cell-top { width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 2px; }
+      .cell-num { font-size: clamp(8px, 0.72vw, 11px); }
+      .cell-mass { font-size: clamp(7px, 0.56vw, 9px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cell-sym { font-size: clamp(13px, 1.32vw, 22px); letter-spacing: -0.02em; }
+      .cell-ru { display: block; font-size: clamp(7px, 0.6vw, 10px); }
+      .cell.active { transform: translate3d(0, -5px, 42px) scale(1.17) rotateX(5deg); }
 
-      .cell-top {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 2px;
-      }
-
-      .cell-num {
-        display: block;
-        font-size: clamp(8px, 0.72vw, 11px);
-      }
-
-      .cell-mass {
-        display: block;
-        font-size: clamp(7px, 0.58vw, 9px);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .cell-sym {
-        font-size: clamp(13px, 1.35vw, 22px);
-        letter-spacing: -0.02em;
-      }
-
-      .cell-ru {
-        display: block;
-        font-size: clamp(7px, 0.62vw, 10px);
-      }
-
-      .scrub-hud {
-        display: none;
-      }
-
-      .inspector {
-        display: none;
-      }
+      .scrub-hud { display: none; }
+      .inspector { display: none; }
 
       .desktop-center {
         grid-column: 3 / 13;
         grid-row: 1 / 4;
-        display: flex;
+        display: block;
+        position: relative;
         border: 1px solid var(--line-strong);
         border-left: 2px solid var(--accent);
-        background: #040404;
-        padding: 10px 14px;
+        background: #030303;
         overflow: hidden;
         min-width: 0;
         min-height: 0;
+        perspective: 1100px;
+        z-index: 15;
       }
 
-      .desktop-center .portrait-view {
-        grid-template-columns: 160px 1fr;
-        gap: 16px;
-      }
+      .desktop-center .panel-layer { inset: 8px 12px; }
+      .desktop-center .portrait-view { grid-template-columns: 168px 1fr; gap: 16px; }
+      .desktop-center .meta-name { font-size: clamp(18px, 1.7vw, 25px); }
 
-      .desktop-center .portrait-frame {
-        border-color: var(--line);
+      .desktop-center .detail-body { flex-direction: row; gap: 10px; }
+      .desktop-center .stage-3d-slot { flex: 0 0 46%; min-height: 0; }
+      .desktop-center .detail-info {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        gap: 6px;
       }
-
-      .desktop-center .meta-name {
-        font-size: clamp(18px, 1.8vw, 26px);
-      }
-
-      .desktop-center .meta-hint {
-        font-size: 12px;
-      }
-
-      .desktop-center .meta-stats {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        max-width: 340px;
-      }
-
-      .desktop-center .detail-grid {
-        grid-template-rows: none;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      .desktop-center .detail-badge {
-        width: 52px;
-        height: 52px;
-        flex: 0 0 52px;
-      }
-
-      .desktop-center .detail-sym {
-        font-size: 24px;
-      }
-
-      .desktop-center .detail-ru {
-        font-size: clamp(16px, 1.5vw, 22px);
-      }
-
-      .desktop-center .info-txt {
-        font-size: clamp(11px, 0.92vw, 13px);
-        line-height: 1.32;
-      }
+      .desktop-center .info-block { justify-content: center; overflow: hidden; }
+      .desktop-center .detail-badge { width: 42px; height: 42px; flex: 0 0 42px; }
+      .desktop-center .detail-sym { font-size: 20px; }
+      .desktop-center .detail-ru { font-size: clamp(15px, 1.4vw, 20px); }
+      .desktop-center .info-txt { font-size: clamp(10.5px, 0.85vw, 12.4px); line-height: 1.28; }
     }
   </style>
 </head>
@@ -812,14 +714,14 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-title">МЕНДЕЛЕЕВ</span>
-        <span class="brand-tag">// 118</span>
+        <span class="brand-tag">// 3D · 118</span>
       </div>
       <div class="controls">
         <div class="search-wrap">
           <input id="searchInput" class="search" type="text" placeholder="Поиск: Au, Золото, 79" autocomplete="off" spellcheck="false" />
           <button id="clearSearch" class="btn-clear" type="button" aria-label="Очистить">✕</button>
         </div>
-        <button id="resetBtn" class="btn-icon" type="button">ПОРТРЕТ</button>
+        <button id="resetBtn" class="btn-icon active" type="button">ПОРТРЕТ</button>
       </div>
     </header>
 
@@ -827,247 +729,168 @@
       <section class="grid-stage" id="gridStage">
         <div class="ptable" id="ptable">
           <div class="scrub-hud" id="scrubHud">
-            <span class="scrub-kicker">ПЕРИОДИЧЕСКАЯ СИСТЕМА</span>
+            <span class="scrub-kicker">3D ПЕРИОДИЧЕСКАЯ СИСТЕМА</span>
             <span class="scrub-main" id="hudMain">ВЕДИ ПАЛЬЦЕМ ПО СЕТКЕ</span>
-            <span class="scrub-sub" id="hudSub">18 ГРУПП · 7 ПЕРИОДОВ</span>
+            <span class="scrub-sub" id="hudSub">18 ГРУПП · 118 3D-МОДЕЛЕЙ</span>
           </div>
-
           <div class="desktop-center" id="desktopCenter"></div>
         </div>
       </section>
 
-      <section class="inspector" id="mobileInspector"></section>
+      <section class="inspector" id="mobileInspector">
+        <div class="inspector-shell" id="inspectorShell">
+          <!-- PORTRAIT LAYER -->
+          <div class="panel-layer portrait-view is-visible" id="portraitView">
+            <div class="portrait-frame" id="portraitFrame">
+              <svg class="portrait-svg" viewBox="0 0 260 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Д. И. Менделеев">
+                <g stroke="#FF4500" stroke-width="0.5" opacity="0.22">
+                  <line x1="8" y1="14" x2="252" y2="14" stroke-dasharray="2 6"/>
+                  <line x1="8" y1="268" x2="252" y2="268" stroke-dasharray="2 6"/>
+                  <line x1="130" y1="4" x2="130" y2="20"/>
+                </g>
+                <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 274 C11 220 18 192 44 179 C63 169 80 165 92 162" stroke-width="1.5" opacity="0.88"/>
+                  <path d="M252 274 C249 218 242 190 216 179 C197 169 180 165 168 162" stroke-width="1.5" opacity="0.88"/>
+                  <path d="M74 166 L60 194 L78 206 L68 214 L106 274" stroke-width="1.4" opacity="0.9"/>
+                  <path d="M186 166 L202 194 L182 208 L192 216 L154 274" stroke-width="1.4" opacity="0.9"/>
+                  <path d="M84 176 L116 266 M176 176 L144 266" stroke-width="1.05" opacity="0.62"/>
+                  <path d="M116 206 L132 252 L148 212 M126 206 L136 244" stroke-width="1.0" opacity="0.72"/>
+                  <circle cx="131" cy="222" r="1.4" stroke-width="0.9" opacity="0.7"/>
+                  <circle cx="148" cy="256" r="2.1" stroke-width="1" opacity="0.8"/>
+                  <path d="M24 206 L58 272 M38 194 L76 272 M18 230 L42 272 M236 206 L202 272 M222 194 L184 272 M242 230 L218 272" stroke-width="0.55" opacity="0.26"/>
+                </g>
+                <g stroke="#FF4500" stroke-linecap="round">
+                  <path d="M84 44 C94 19 124 13 152 21 C172 27 184 44 188 66" stroke-width="1.4" opacity="0.92"/>
+                  <path d="M92 34 C114 20 144 20 166 32 M102 26 C126 16 154 22 174 40" stroke-width="1.0" opacity="0.65"/>
+                  <path d="M88 38 C70 52 58 84 44 114 C36 130 26 140 22 154" stroke-width="1.35" opacity="0.88"/>
+                  <path d="M82 48 C66 66 56 96 42 126 C34 142 30 150 32 162" stroke-width="1.1" opacity="0.72"/>
+                  <path d="M86 58 C72 80 62 108 50 138 C44 152 44 162 48 168" stroke-width="0.95" opacity="0.58"/>
+                  <path d="M74 62 C58 82 44 106 32 132 M68 86 C52 106 38 124 20 142" stroke-width="0.75" opacity="0.42"/>
+                  <path d="M174 42 C192 58 202 88 214 118 C222 136 232 146 238 158" stroke-width="1.35" opacity="0.88"/>
+                  <path d="M178 52 C194 72 202 100 214 130 C220 144 224 154 222 164" stroke-width="1.1" opacity="0.72"/>
+                  <path d="M174 64 C188 86 194 112 204 140 C208 154 208 162 204 168" stroke-width="0.95" opacity="0.58"/>
+                  <path d="M186 68 C202 88 216 112 228 138 M192 92 C206 110 220 128 236 146" stroke-width="0.75" opacity="0.42"/>
+                </g>
+                <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M90 92 C88 68 92 46 106 36 C122 26 146 28 160 40 C172 52 172 72 168 94" stroke-width="1.5" opacity="0.96"/>
+                  <path d="M104 52 C122 48 142 50 156 56 M100 60 C120 56 144 58 158 64 M104 68 C122 65 140 67 154 72" stroke-width="0.75" opacity="0.52"/>
+                  <path d="M126 70 L124 80 M131 71 L130 79" stroke-width="0.9" opacity="0.65"/>
+                  <path d="M90 94 C88 106 90 116 96 124 M168 94 C168 106 165 116 158 126" stroke-width="1.2" opacity="0.75"/>
+                  <path d="M95 80 C104 75 114 76 122 80 M135 81 C144 77 154 77 163 82" stroke-width="1.75" opacity="1"/>
+                  <path d="M99 88 C105 83 114 83 120 88 M100 89 C106 92 114 92 119 89" stroke-width="1.3" opacity="0.95"/>
+                  <circle cx="109.5" cy="87.5" r="2.6" stroke-width="1.3" opacity="1"/>
+                  <circle cx="109.5" cy="87.5" r="1.0" fill="#FF4500"/>
+                  <path d="M137 89 C143 84 152 84 158 89 M138 90 C144 93 152 93 157 90" stroke-width="1.3" opacity="0.95"/>
+                  <circle cx="147.5" cy="88.5" r="2.5" stroke-width="1.3" opacity="1"/>
+                  <circle cx="147.5" cy="88.5" r="1.0" fill="#FF4500"/>
+                  <path d="M97 93 C104 97 114 97 120 94 M137 94 C144 98 153 98 159 95" stroke-width="0.8" opacity="0.55"/>
+                  <path d="M124 82 C123 92 121 102 120 110 M133 83 C134 93 136 102 138 109" stroke-width="1.15" opacity="0.8"/>
+                  <path d="M116 112 C120 117 134 118 140 112 M114 108 C112 112 115 115 120 114 M142 109 C144 113 141 116 136 115" stroke-width="1.35" opacity="0.92"/>
+                </g>
+                <g stroke="#FF4500" stroke-linecap="round">
+                  <path d="M128 118 C116 117 104 123 92 136 M128 118 C140 118 152 124 164 137" stroke-width="1.6" opacity="1"/>
+                  <path d="M125 121 C114 122 102 129 94 142 M131 121 C142 122 154 130 162 143" stroke-width="1.2" opacity="0.82"/>
+                  <path d="M120 133 C126 136 132 136 137 133" stroke-width="1.3" opacity="0.9"/>
+                  <path d="M84 114 C72 134 68 158 78 182 C86 202 98 220 108 238" stroke-width="1.4" opacity="0.9"/>
+                  <path d="M172 114 C182 136 184 160 174 184 C166 202 156 218 144 234" stroke-width="1.4" opacity="0.9"/>
+                  <path d="M88 124 C78 146 80 170 90 194 C98 212 104 226 112 246" stroke-width="1.15" opacity="0.78"/>
+                  <path d="M96 134 C88 156 90 178 98 202 C104 218 112 232 118 248" stroke-width="1.05" opacity="0.7"/>
+                  <path d="M108 141 C102 165 104 189 111 213 C115 227 119 239 124 248" stroke-width="1.0" opacity="0.66"/>
+                  <path d="M118 140 C114 164 116 188 122 212 C125 224 127 234 128 244" stroke-width="1.2" opacity="0.82"/>
+                  <path d="M128 140 C127 166 128 190 132 214 C134 226 135 236 137 242" stroke-width="1.2" opacity="0.85"/>
+                  <path d="M138 140 C140 164 140 188 141 210 C142 222 142 232 142 238" stroke-width="1.05" opacity="0.72"/>
+                  <path d="M148 140 C154 162 153 186 149 208 C146 220 144 228 142 234" stroke-width="1.05" opacity="0.7"/>
+                  <path d="M158 134 C166 156 164 180 158 202 C154 214 150 224 146 232" stroke-width="1.15" opacity="0.78"/>
+                  <path d="M166 124 C174 146 174 170 166 194 C160 208 154 220 148 230" stroke-width="1.15" opacity="0.78"/>
+                  <path d="M84 152 C98 158 112 158 126 156 C142 158 156 156 170 150 M86 176 C104 182 122 183 136 181 C150 180 160 176 170 170" stroke-width="0.55" opacity="0.26"/>
+                </g>
+              </svg>
+            </div>
+            <div class="portrait-meta">
+              <div class="meta-index">ПЕРИОДИЧЕСКИЙ ЗАКОН // 1869</div>
+              <div class="meta-name">Дмитрий<br/>Менделеев</div>
+              <div class="meta-years">1834 — 1907 · ТОБОЛЬСК / СПБ</div>
+              <p class="meta-hint">Выбери элемент или проведи пальцем по сетке — откроется его 3D-атом, кристаллическая решётка и 3D-образец.</p>
+              <div class="meta-stats">
+                <div class="stat-box">
+                  <div class="stat-val">118</div>
+                  <div class="stat-lbl">Элементов</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-val">3×3D</div>
+                  <div class="stat-lbl">Режима</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ELEMENT DETAIL + 3D LAYER -->
+          <div class="panel-layer detail-view is-hidden" id="detailView">
+            <div class="detail-head swap-card" id="detailHead">
+              <div class="detail-badge">
+                <span class="detail-num" id="fNum">001</span>
+                <span class="detail-sym" id="fSym">H</span>
+              </div>
+              <div class="detail-titles">
+                <div class="detail-title-row">
+                  <span class="detail-ru" id="fRu">Водород</span>
+                  <span class="detail-en" id="fEn">Hydrogen</span>
+                </div>
+                <div class="detail-tags">
+                  <span class="tag-pill" id="fMass">Ar: 1.008</span>
+                  <button type="button" class="tag-pill tag-cat" id="fCat" title="Подсветить категорию">Неметалл</button>
+                </div>
+              </div>
+              <div class="detail-nav">
+                <div class="nav-row">
+                  <button type="button" class="nav-btn" id="btnPrev" aria-label="Предыдущий">←</button>
+                  <button type="button" class="nav-btn" id="btnNext" aria-label="Следующий">→</button>
+                </div>
+                <button type="button" class="nav-btn nav-btn-close" id="btnClose">✕</button>
+              </div>
+            </div>
+
+            <div class="detail-body">
+              <div class="stage-3d-slot" id="stage3dSlot">
+                <div class="stage-3d" id="stage3d">
+                  <canvas id="canvas3d"></canvas>
+                  <div class="hud-3d-top">
+                    <span class="hud-3d-label" id="hud3dLabel">3D // АТОМ</span>
+                    <div class="hud-3d-modes">
+                      <button type="button" class="mode-btn active" data-mode="atom">АТОМ</button>
+                      <button type="button" class="mode-btn" data-mode="lattice">КРИСТАЛЛ</button>
+                      <button type="button" class="mode-btn" data-mode="specimen">ОБРАЗЕЦ</button>
+                      <button type="button" class="mode-btn" id="btnExpand" title="На весь экран">⤢</button>
+                    </div>
+                  </div>
+                  <div class="hud-3d-bottom">
+                    <span class="hud-shells" id="hudShells">e⁻: <b>1</b></span>
+                    <span class="hud-angles" id="hudAngles">X:024° Y:000°</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-info swap-card" id="detailInfo">
+                <div class="info-block">
+                  <div class="info-lbl">ОПИСАНИЕ</div>
+                  <div class="info-txt" id="fDesc"></div>
+                </div>
+                <div class="info-block fact">
+                  <div class="info-lbl">СВОЙСТВО И ФАКТ</div>
+                  <div class="info-txt" id="fFeat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <!-- Template for inspector (mounted either in desktopCenter or mobileInspector) -->
-  <template id="inspectorTpl">
-    <div class="portrait-view" data-role="portraitView">
-      <div class="portrait-frame">
-        <!-- Multi-line architectural orange engraving of D. I. Mendeleev -->
-        <svg class="portrait-svg" viewBox="0 0 260 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Д. И. Менделеев">
-          <!-- Subtle technical grid ticks -->
-          <g stroke="#FF4500" stroke-width="0.5" opacity="0.22">
-            <line x1="8" y1="14" x2="252" y2="14" stroke-dasharray="2 6"/>
-            <line x1="8" y1="268" x2="252" y2="268" stroke-dasharray="2 6"/>
-            <line x1="130" y1="4" x2="130" y2="20"/>
-            <line x1="12" y1="108" x2="22" y2="108"/>
-            <line x1="238" y1="108" x2="248" y2="108"/>
-          </g>
-
-          <!-- Coat / Shoulders outer silhouette & structural folds -->
-          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 274 C12 222 18 194 42 180 C62 169 80 165 92 162" stroke-width="1.5" opacity="0.85"/>
-            <path d="M250 274 C248 220 242 192 218 180 C198 169 180 165 168 162" stroke-width="1.5" opacity="0.85"/>
-            <!-- Left lapel & jacket collar -->
-            <path d="M74 166 L60 194 L78 206 L68 214 L106 274" stroke-width="1.4" opacity="0.9"/>
-            <path d="M84 176 L116 266" stroke-width="1.1" opacity="0.65"/>
-            <!-- Right lapel -->
-            <path d="M186 166 L202 194 L182 208 L192 216 L154 274" stroke-width="1.4" opacity="0.9"/>
-            <path d="M176 176 L144 266" stroke-width="1.1" opacity="0.65"/>
-            <!-- White shirt V-neck & waistcoat -->
-            <path d="M116 206 L132 252 L148 212" stroke-width="1.1" opacity="0.75"/>
-            <path d="M126 206 L136 244" stroke-width="0.7" opacity="0.5"/>
-            <circle cx="131" cy="222" r="1.4" stroke-width="0.9" opacity="0.7"/>
-            <circle cx="148" cy="256" r="2.2" stroke-width="1" opacity="0.8"/>
-            <!-- Coat wool hatching -->
-            <path d="M24 206 L58 272 M36 196 L74 272 M18 228 L42 272 M48 186 L90 272" stroke-width="0.6" opacity="0.28"/>
-            <path d="M236 206 L202 272 M224 196 L186 272 M242 228 L218 272 M212 186 L170 272" stroke-width="0.6" opacity="0.28"/>
-            <path d="M14 252 L28 274 M246 252 L232 274" stroke-width="0.6" opacity="0.25"/>
-          </g>
-
-          <!-- Flowing long hair (left & right swept strands) -->
-          <g stroke="#FF4500" stroke-linecap="round">
-            <!-- Crown & top hair sweep -->
-            <path d="M84 44 C94 20 124 14 152 22 C172 28 184 44 188 66" stroke-width="1.4" opacity="0.9"/>
-            <path d="M92 34 C114 20 144 20 166 32" stroke-width="1.1" opacity="0.7"/>
-            <path d="M102 26 C126 16 154 22 174 40" stroke-width="0.9" opacity="0.55"/>
-            <path d="M112 22 C134 19 156 28 172 48" stroke-width="0.7" opacity="0.4"/>
-            <!-- Left side wild wavy hair -->
-            <path d="M88 38 C70 52 58 84 44 114 C36 130 28 140 24 152" stroke-width="1.3" opacity="0.85"/>
-            <path d="M82 48 C66 66 56 96 42 126 C34 142 30 150 32 162" stroke-width="1.1" opacity="0.72"/>
-            <path d="M86 58 C72 80 62 108 50 138 C44 152 44 162 48 168" stroke-width="1.0" opacity="0.62"/>
-            <path d="M90 70 C78 92 70 116 60 144 C56 156 58 164 62 168" stroke-width="0.9" opacity="0.5"/>
-            <path d="M74 62 C58 82 44 106 32 132" stroke-width="0.8" opacity="0.45"/>
-            <path d="M68 86 C52 106 38 124 22 140" stroke-width="0.7" opacity="0.35"/>
-            <path d="M80 96 C70 118 62 138 56 158" stroke-width="0.7" opacity="0.4"/>
-            <!-- Right side wild wavy hair -->
-            <path d="M174 42 C192 58 202 88 214 118 C222 136 230 146 236 156" stroke-width="1.3" opacity="0.85"/>
-            <path d="M178 52 C194 72 202 100 214 130 C220 144 224 154 222 164" stroke-width="1.1" opacity="0.72"/>
-            <path d="M174 64 C188 86 194 112 204 140 C208 154 208 162 204 168" stroke-width="1.0" opacity="0.62"/>
-            <path d="M168 74 C180 96 186 118 194 146 C198 156 196 164 190 168" stroke-width="0.9" opacity="0.5"/>
-            <path d="M186 68 C202 88 216 112 228 138" stroke-width="0.8" opacity="0.45"/>
-            <path d="M192 92 C206 110 220 128 234 144" stroke-width="0.7" opacity="0.35"/>
-            <path d="M180 100 C188 120 194 140 198 158" stroke-width="0.7" opacity="0.4"/>
-          </g>
-
-          <!-- Face structure, forehead, cheekbones -->
-          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
-            <!-- High domed forehead contour -->
-            <path d="M90 92 C88 68 92 46 106 36 C122 26 146 28 160 40 C172 52 172 72 168 94" stroke-width="1.5" opacity="0.95"/>
-            <!-- Forehead wrinkles -->
-            <path d="M104 52 C122 48 142 50 156 56" stroke-width="0.7" opacity="0.48"/>
-            <path d="M100 60 C120 56 144 58 158 64" stroke-width="0.8" opacity="0.58"/>
-            <path d="M104 68 C122 65 140 67 154 72" stroke-width="0.7" opacity="0.45"/>
-            <!-- Glabella furrow -->
-            <path d="M126 70 L124 80 M131 71 L130 79" stroke-width="0.9" opacity="0.65"/>
-            <!-- Cheekbones & lower temple -->
-            <path d="M90 94 C88 106 90 116 96 124" stroke-width="1.2" opacity="0.75"/>
-            <path d="M168 94 C168 106 165 116 158 126" stroke-width="1.2" opacity="0.75"/>
-            <path d="M94 106 C100 112 106 114 112 118" stroke-width="0.7" opacity="0.45"/>
-            <path d="M162 108 C156 114 150 116 144 120" stroke-width="0.7" opacity="0.45"/>
-          </g>
-
-          <!-- Deep-set stern eyes & eyebrows -->
-          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
-            <!-- Left eyebrow -->
-            <path d="M95 80 C104 75 114 76 122 80" stroke-width="1.7" opacity="0.95"/>
-            <path d="M98 78 C108 74 116 75 123 78" stroke-width="0.9" opacity="0.65"/>
-            <!-- Right eyebrow -->
-            <path d="M135 81 C144 77 154 77 163 82" stroke-width="1.7" opacity="0.95"/>
-            <path d="M136 79 C146 75 155 76 161 80" stroke-width="0.9" opacity="0.65"/>
-
-            <!-- Left eye -->
-            <path d="M99 88 C105 83 114 83 120 88" stroke-width="1.5" opacity="1"/>
-            <path d="M100 89 C106 92 114 92 119 89" stroke-width="1.0" opacity="0.8"/>
-            <circle cx="109.5" cy="87.5" r="2.6" stroke-width="1.3" opacity="1"/>
-            <circle cx="109.5" cy="87.5" r="0.9" fill="#FF4500"/>
-            <!-- Left eyelid crease & under-eye bag -->
-            <path d="M98 85 C106 80 115 81 121 85" stroke-width="0.8" opacity="0.6"/>
-            <path d="M97 93 C104 97 114 97 120 94" stroke-width="0.8" opacity="0.55"/>
-            <path d="M95 90 L91 92 M95 93 L92 96" stroke-width="0.6" opacity="0.4"/>
-
-            <!-- Right eye -->
-            <path d="M137 89 C143 84 152 84 158 89" stroke-width="1.5" opacity="1"/>
-            <path d="M138 90 C144 93 152 93 157 90" stroke-width="1.0" opacity="0.8"/>
-            <circle cx="147.5" cy="88.5" r="2.5" stroke-width="1.3" opacity="1"/>
-            <circle cx="147.5" cy="88.5" r="0.9" fill="#FF4500"/>
-            <!-- Right eyelid crease & under-eye bag -->
-            <path d="M136 86 C144 82 153 82 159 86" stroke-width="0.8" opacity="0.6"/>
-            <path d="M137 94 C144 98 153 98 159 95" stroke-width="0.8" opacity="0.55"/>
-            <path d="M161 91 L165 93 M160 94 L164 97" stroke-width="0.6" opacity="0.4"/>
-          </g>
-
-          <!-- Strong nose -->
-          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M124 82 C123 92 121 102 120 110" stroke-width="1.2" opacity="0.85"/>
-            <path d="M133 83 C134 93 136 102 138 109" stroke-width="1.0" opacity="0.65"/>
-            <!-- Tip & nostrils -->
-            <path d="M116 112 C120 117 134 118 140 112" stroke-width="1.5" opacity="0.95"/>
-            <path d="M114 108 C112 112 115 115 120 114" stroke-width="1.1" opacity="0.8"/>
-            <path d="M142 109 C144 113 141 116 136 115" stroke-width="1.1" opacity="0.8"/>
-            <!-- Nose highlight line -->
-            <path d="M128 88 L128 111" stroke-width="0.6" opacity="0.35"/>
-          </g>
-
-          <!-- Thick drooping mustache & mouth hint -->
-          <g stroke="#FF4500" stroke-linecap="round">
-            <path d="M128 118 C116 117 104 123 92 136" stroke-width="1.6" opacity="1"/>
-            <path d="M128 118 C140 118 152 124 164 137" stroke-width="1.6" opacity="1"/>
-            <path d="M125 121 C114 122 102 129 94 142" stroke-width="1.2" opacity="0.82"/>
-            <path d="M131 121 C142 122 154 130 162 143" stroke-width="1.2" opacity="0.82"/>
-            <path d="M122 124 C112 127 104 134 98 145" stroke-width="1.0" opacity="0.7"/>
-            <path d="M134 124 C144 127 152 134 158 146" stroke-width="1.0" opacity="0.7"/>
-            <path d="M118 128 C124 126 132 126 138 129" stroke-width="1.1" opacity="0.75"/>
-            <!-- Subtle lower lip shadow -->
-            <path d="M120 133 C126 136 132 136 137 133" stroke-width="1.3" opacity="0.9"/>
-          </g>
-
-          <!-- Iconic wild multi-layered beard -->
-          <g stroke="#FF4500" stroke-linecap="round">
-            <!-- Outer beard silhouette left & right -->
-            <path d="M84 114 C72 134 68 158 78 182 C86 202 98 220 108 238" stroke-width="1.4" opacity="0.9"/>
-            <path d="M172 114 C182 136 184 160 174 184 C166 202 156 218 144 234" stroke-width="1.4" opacity="0.9"/>
-            <!-- Left beard waves -->
-            <path d="M88 124 C78 146 80 170 90 194 C98 212 104 226 112 246" stroke-width="1.2" opacity="0.8"/>
-            <path d="M94 134 C86 156 88 178 96 202 C102 218 110 232 116 248" stroke-width="1.1" opacity="0.74"/>
-            <path d="M102 140 C94 162 96 186 104 208 C109 224 115 236 121 250" stroke-width="1.0" opacity="0.68"/>
-            <path d="M110 142 C104 166 106 190 112 214 C116 228 120 240 125 248" stroke-width="1.0" opacity="0.65"/>
-            <path d="M82 136 C74 154 74 174 82 192" stroke-width="0.9" opacity="0.52"/>
-            <path d="M98 158 C92 178 94 198 102 218" stroke-width="0.8" opacity="0.48"/>
-            <!-- Center beard waves -->
-            <path d="M118 140 C114 164 116 188 122 212 C125 224 127 234 128 244" stroke-width="1.2" opacity="0.82"/>
-            <path d="M126 140 C125 166 126 190 130 214 C132 226 134 236 136 242" stroke-width="1.2" opacity="0.85"/>
-            <path d="M134 140 C136 164 136 188 138 210 C140 222 141 232 142 238" stroke-width="1.1" opacity="0.75"/>
-            <path d="M122 154 C120 176 122 198 126 220" stroke-width="0.8" opacity="0.5"/>
-            <path d="M131 156 C132 178 134 200 136 222" stroke-width="0.8" opacity="0.5"/>
-            <!-- Right beard waves -->
-            <path d="M142 142 C146 164 146 188 144 210 C142 222 140 232 138 240" stroke-width="1.0" opacity="0.68"/>
-            <path d="M150 140 C156 162 154 186 150 208 C147 220 144 228 142 234" stroke-width="1.1" opacity="0.74"/>
-            <path d="M158 134 C166 156 164 180 158 202 C154 214 150 224 146 232" stroke-width="1.2" opacity="0.8"/>
-            <path d="M166 124 C174 146 174 170 166 194 C160 208 154 220 148 230" stroke-width="1.2" opacity="0.8"/>
-            <path d="M174 136 C180 156 178 176 170 194" stroke-width="0.9" opacity="0.52"/>
-            <path d="M156 158 C162 178 158 198 152 216" stroke-width="0.8" opacity="0.48"/>
-            <!-- Stray wild beard ends -->
-            <path d="M90 198 C86 210 88 220 94 228" stroke-width="0.7" opacity="0.45"/>
-            <path d="M104 222 C102 232 104 240 108 248" stroke-width="0.8" opacity="0.55"/>
-            <path d="M118 232 C116 242 119 248 122 254" stroke-width="0.8" opacity="0.55"/>
-            <path d="M136 226 C138 236 142 242 146 246" stroke-width="0.7" opacity="0.5"/>
-            <path d="M162 198 C166 210 164 220 158 228" stroke-width="0.7" opacity="0.45"/>
-            <!-- Beard cross-texture shading -->
-            <path d="M84 152 C98 158 112 158 126 156 C142 158 156 156 170 150" stroke-width="0.55" opacity="0.28"/>
-            <path d="M86 174 C102 180 118 182 132 180 C148 180 160 176 170 170" stroke-width="0.55" opacity="0.25"/>
-            <path d="M96 196 C110 202 124 204 136 202 C148 200 156 196 164 190" stroke-width="0.55" opacity="0.24"/>
-          </g>
-        </svg>
-      </div>
-      <div class="portrait-meta">
-        <div class="meta-index">ПЕРИОДИЧЕСКИЙ ЗАКОН // 1869</div>
-        <div class="meta-name">Дмитрий<br/>Менделеев</div>
-        <div class="meta-years">1834 — 1907 · ТОБОЛЬСК / СПБ</div>
-        <p class="meta-hint">Коснись любой клетки или проведи пальцем по сетке, чтобы открыть свойства и факты элемента.</p>
-        <div class="meta-stats">
-          <div class="stat-box">
-            <div class="stat-val">118</div>
-            <div class="stat-lbl">Элементов</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-val">18×7</div>
-            <div class="stat-lbl">Сетка</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="detail-view" data-role="detailView">
-      <div class="detail-head">
-        <div class="detail-badge">
-          <span class="detail-num" data-field="num">001</span>
-          <span class="detail-sym" data-field="sym">H</span>
-        </div>
-        <div class="detail-titles">
-          <div class="detail-title-row">
-            <span class="detail-ru" data-field="ru">Водород</span>
-            <span class="detail-en" data-field="en">Hydrogen</span>
-          </div>
-          <div class="detail-tags">
-            <span class="tag-pill" data-field="mass">Ar: 1.008</span>
-            <button type="button" class="tag-pill tag-cat" data-field="cat" title="Подсветить всю категорию">Неметалл</button>
-          </div>
-        </div>
-        <div class="detail-nav">
-          <div class="nav-row">
-            <button type="button" class="nav-btn" data-action="prev" aria-label="Предыдущий">←</button>
-            <button type="button" class="nav-btn" data-action="next" aria-label="Следующий">→</button>
-          </div>
-          <button type="button" class="nav-btn nav-btn-close" data-action="close">✕</button>
-        </div>
-      </div>
-
-      <div class="detail-grid">
-        <div class="info-block">
-          <div class="info-lbl">ОПИСАНИЕ</div>
-          <div class="info-txt" data-field="desc"></div>
-        </div>
-        <div class="info-block fact">
-          <div class="info-lbl">СВОЙСТВО И ФАКТ</div>
-          <div class="info-txt" data-field="feat"></div>
-        </div>
-      </div>
-    </div>
-  </template>
+  <div class="fs-portal" id="fsPortal"></div>
 
   <script>
+    /* ===== 118 ELEMENTS DATA ===== */
     const RAW_ELEMENTS = [
       [1,"H","Водород","Hydrogen","1.008","Неметалл",1,1,"Топливо звёзд и самый лёгкий газ во Вселенной — из него состоит три четверти всей видимой материи.","Горит почти невидимым днём пламенем, а в смеси с воздухом взрывается от малейшей искры (гремучий газ)."],
       [2,"He","Гелий","Helium","4.0026","Благородный газ",1,18,"Единственный элемент, который нашли на Солнце по спектру раньше, чем обнаружили на Земле.","Не замерзает при обычном давлении даже у абсолютного нуля, а при −271 °C становится сверхтекучим и лезет вверх по стенкам сосуда."],
@@ -1189,32 +1012,80 @@
       [118,"Og","Оганесон","Oganesson","[294]","Благородный газ",7,18,"Финал таблицы — назван в честь академика Юрия Оганесяна, второго человека, удостоенного этой чести при жизни.","Формально стоит среди благородных газов, но по расчётам при комнатной температуре был бы твёрдым и химически активным."]
     ];
 
-    const ELEMENTS = RAW_ELEMENTS.map(([num, sym, ru, en, mass, cat, row, col, desc, feat]) => ({
-      num, sym, ru, en, mass, cat, row, col, desc, feat
+    const SHELLS = [
+      [1],[2],
+      [2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],
+      [2,8,1],[2,8,2],[2,8,3],[2,8,4],[2,8,5],[2,8,6],[2,8,7],[2,8,8],
+      [2,8,8,1],[2,8,8,2],[2,8,9,2],[2,8,10,2],[2,8,11,2],[2,8,13,1],[2,8,13,2],[2,8,14,2],[2,8,15,2],[2,8,16,2],[2,8,18,1],[2,8,18,2],[2,8,18,3],[2,8,18,4],[2,8,18,5],[2,8,18,6],[2,8,18,7],[2,8,18,8],
+      [2,8,18,8,1],[2,8,18,8,2],[2,8,18,9,2],[2,8,18,10,2],[2,8,18,12,1],[2,8,18,13,1],[2,8,18,13,2],[2,8,18,15,1],[2,8,18,16,1],[2,8,18,18],[2,8,18,18,1],[2,8,18,18,2],[2,8,18,18,3],[2,8,18,18,4],[2,8,18,18,5],[2,8,18,18,6],[2,8,18,18,7],[2,8,18,18,8],
+      [2,8,18,18,8,1],[2,8,18,18,8,2],[2,8,18,18,9,2],[2,8,18,19,9,2],[2,8,18,21,8,2],[2,8,18,22,8,2],[2,8,18,23,8,2],[2,8,18,24,8,2],[2,8,18,25,8,2],[2,8,18,25,9,2],[2,8,18,27,8,2],[2,8,18,28,8,2],[2,8,18,29,8,2],[2,8,18,30,8,2],[2,8,18,31,8,2],[2,8,18,32,8,2],[2,8,18,32,9,2],
+      [2,8,18,32,10,2],[2,8,18,32,11,2],[2,8,18,32,12,2],[2,8,18,32,13,2],[2,8,18,32,14,2],[2,8,18,32,15,2],[2,8,18,32,17,1],[2,8,18,32,18,1],[2,8,18,32,18,2],[2,8,18,32,18,3],[2,8,18,32,18,4],[2,8,18,32,18,5],[2,8,18,32,18,6],[2,8,18,32,18,7],[2,8,18,32,18,8],
+      [2,8,18,32,18,8,1],[2,8,18,32,18,8,2],[2,8,18,32,18,9,2],[2,8,18,32,18,10,2],[2,8,18,32,20,9,2],[2,8,18,32,21,9,2],[2,8,18,32,22,9,2],[2,8,18,32,24,8,2],[2,8,18,32,25,8,2],[2,8,18,32,25,9,2],[2,8,18,32,27,8,2],[2,8,18,32,28,8,2],[2,8,18,32,29,8,2],[2,8,18,32,30,8,2],[2,8,18,32,31,8,2],[2,8,18,32,32,8,2],[2,8,18,32,32,8,3],
+      [2,8,18,32,32,10,2],[2,8,18,32,32,11,2],[2,8,18,32,32,12,2],[2,8,18,32,32,13,2],[2,8,18,32,32,14,2],[2,8,18,32,32,15,2],[2,8,18,32,32,17,1],[2,8,18,32,32,18,1],[2,8,18,32,32,18,2],[2,8,18,32,32,18,3],[2,8,18,32,32,18,4],[2,8,18,32,32,18,5],[2,8,18,32,32,18,6],[2,8,18,32,32,18,7],[2,8,18,32,32,18,8]
+    ];
+
+    function classifyStructure(n) {
+      if (n === 16) return { id: "s8", name: "КОЛЬЦО S₈", spec: "crystal", specName: "КРИСТАЛЛ СЕРЫ" };
+      if (n === 15) return { id: "p4", name: "ТЕТРАЭДР P₄", spec: "crystal", specName: "ТЕТРАЭДР P₄" };
+      if ([2,10,18,36,54,86,118].includes(n)) return { id: "noble", name: "ИНЕРТНЫЙ ГАЗ", spec: "plasma", specName: "ГАЗОВАЯ КАПСУЛА" };
+      if ([1,7,8,9,17].includes(n)) return { id: "gas2", name: "МОЛЕКУЛА ГАЗА", spec: "plasma", specName: "КОНТЕЙНЕР ГАЗА" };
+      if ([35,80,31].includes(n)) return { id: "liquid", name: "ЖИДКИЙ КЛАСТЕР", spec: "droplet", specName: "ЖИДКАЯ КАПЛЯ" };
+      if ([6,14,32,5].includes(n)) return { id: "diamond", name: "АЛМАЗНАЯ РЕШЁТКА", spec: "gem", specName: "ГРАНЁНЫЙ КРИСТАЛЛ" };
+      if ((n >= 84 && n !== 86 && n !== 88 && n !== 90) || n === 43 || n === 61) {
+        return { id: "radio", name: "РАДИОАКТИВНОЕ ЯДРО", spec: "reactor", specName: "ИЗОТОПНЫЙ КОНТУР" };
+      }
+      if ([3,11,19,23,24,26,37,41,42,55,56,63,73,74,87,88].includes(n)) {
+        return { id: "bcc", name: "ОЦК-РЕШЁТКА", spec: "ingot", specName: "МЕТАЛЛИЧЕСКИЙ СЛИТОК" };
+      }
+      if ([13,20,28,29,38,45,46,47,58,70,77,78,79,82,89,90].includes(n)) {
+        return { id: "fcc", name: "ГЦК-РЕШЁТКА", spec: "octa", specName: "КУБООКТАЭДР МЕТАЛЛА" };
+      }
+      if ([4,12,21,22,27,30,39,40,44,48,57,59,60,64,65,66,67,68,69,71,72,75,76,81].includes(n)) {
+        return { id: "hcp", name: "ГПУ-РЕШЁТКА", spec: "hex", specName: "ГЕКСАГОНАЛЬНЫЙ СЛИТОК" };
+      }
+      return { id: "poly", name: "КРИСТАЛЛИЧЕСКАЯ ЯЧЕЙКА", spec: "crystal", specName: "МОНОКРИСТАЛЛ" };
+    }
+
+    const ELEMENTS = RAW_ELEMENTS.map(([num, sym, ru, en, mass, cat, row, col, desc, feat], i) => ({
+      num, sym, ru, en, mass, cat, row, col, desc, feat,
+      shells: SHELLS[i],
+      struct: classifyStructure(num)
     }));
 
-    const ptable = document.getElementById("ptable");
-    const gridStage = document.getElementById("gridStage");
-    const desktopCenter = document.getElementById("desktopCenter");
-    const mobileInspector = document.getElementById("mobileInspector");
-    const tpl = document.getElementById("inspectorTpl");
-    const searchInput = document.getElementById("searchInput");
-    const clearSearch = document.getElementById("clearSearch");
-    const resetBtn = document.getElementById("resetBtn");
-    const hudMain = document.getElementById("hudMain");
-    const hudSub = document.getElementById("hudSub");
+    /* ===== DOM ===== */
+    const $ = (id) => document.getElementById(id);
+    const ptable = $("ptable"), gridStage = $("gridStage");
+    const desktopCenter = $("desktopCenter"), mobileInspector = $("mobileInspector");
+    const inspectorShell = $("inspectorShell"), portraitView = $("portraitView");
+    const portraitFrame = $("portraitFrame"), detailView = $("detailView");
+    const detailHead = $("detailHead"), detailInfo = $("detailInfo");
+    const searchInput = $("searchInput"), clearSearch = $("clearSearch"), resetBtn = $("resetBtn");
+    const hudMain = $("hudMain"), hudSub = $("hudSub");
+    const fNum = $("fNum"), fSym = $("fSym"), fRu = $("fRu"), fEn = $("fEn");
+    const fMass = $("fMass"), fCat = $("fCat"), fDesc = $("fDesc"), fFeat = $("fFeat");
+    const btnPrev = $("btnPrev"), btnNext = $("btnNext"), btnClose = $("btnClose");
+    const stage3dSlot = $("stage3dSlot"), fsPortal = $("fsPortal");
+    const stage3d = $("stage3d"), canvas3d = $("canvas3d");
+    const ctx = canvas3d.getContext("2d", { alpha: false });
+    const hud3dLabel = $("hud3dLabel"), hudShells = $("hudShells"), hudAngles = $("hudAngles");
+    const btnExpand = $("btnExpand");
+    const modeBtns = document.querySelectorAll(".mode-btn[data-mode]");
 
-    // Mount two synced inspector instances (desktop center + mobile bottom)
-    desktopCenter.appendChild(tpl.content.cloneNode(true));
-    mobileInspector.appendChild(tpl.content.cloneNode(true));
-    const inspectors = [desktopCenter, mobileInspector];
+    const mqDesktop = window.matchMedia("(min-width: 960px) and (min-height: 580px)");
+    function syncInspectorHost() {
+      const target = mqDesktop.matches ? desktopCenter : mobileInspector;
+      if (inspectorShell.parentElement !== target) target.appendChild(inspectorShell);
+      gridMetrics = null;
+      resizeCanvas();
+    }
 
+    /* ===== BUILD GRID ===== */
     const cellMap = new Map();
-    let selectedNum = null;
-    let activeCategory = null;
-    let isScrubbing = false;
+    const coordMap = new Map();
+    const cellNumByCoord = new Int16Array(11 * 19);
+    const rowFirstCell = new Map();
+    let selectedNum = null, activeCategory = null, isScrubbing = false;
 
-    // Classic series markers for lanthanides/actinides
     function addMarker(label, row, col) {
       const m = document.createElement("div");
       m.className = "cell-marker";
@@ -1226,7 +1097,6 @@
     addMarker("57–71", 6, 3);
     addMarker("89–103", 7, 3);
 
-    // Build all 118 cells
     const frag = document.createDocumentFragment();
     for (const el of ELEMENTS) {
       const cell = document.createElement("div");
@@ -1240,182 +1110,1310 @@
         `<span class="cell-sym">${el.sym}</span>` +
         `<span class="cell-ru">${el.ru}</span>`;
       cellMap.set(el.num, cell);
+      coordMap.set(`${el.row}:${el.col}`, cell);
+      cellNumByCoord[el.row * 19 + el.col] = el.num;
+      if (!rowFirstCell.has(el.row)) rowFirstCell.set(el.row, cell);
       frag.appendChild(cell);
     }
     ptable.appendChild(frag);
 
-    function padNum(n) {
-      return String(n).padStart(3, "0");
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      for (const el of ELEMENTS) {
+        const cell = cellMap.get(el.num);
+        const delay = (el.col + el.row * 1.4) * 14;
+        cell.animate(
+          [
+            { opacity: 0, transform: "translate3d(0, 8px, -32px) scale(0.84)" },
+            { opacity: 1, transform: "translate3d(0, 0, 0) scale(1)" }
+          ],
+          { duration: 360, delay, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "backwards" }
+        );
+      }
     }
 
-    function updateInspectorViews(el) {
-      for (const root of inspectors) {
-        const pv = root.querySelector('[data-role="portraitView"]');
-        const dv = root.querySelector('[data-role="detailView"]');
-        if (!el) {
-          pv.classList.remove("hidden");
-          dv.classList.remove("visible");
-          continue;
+    let gridMetrics = null;
+    function cacheGridMetrics() {
+      const rect = ptable.getBoundingClientRect();
+      const rowBands = [];
+      for (const [r, cell] of rowFirstCell.entries()) {
+        const top = rect.top + cell.offsetTop;
+        rowBands.push({ r, top, bottom: top + cell.offsetHeight });
+      }
+      gridMetrics = { left: rect.left, width: rect.width, rowBands };
+    }
+
+    function fastHitCell(clientX, clientY) {
+      if (!gridMetrics) cacheGridMetrics();
+      const { left, width, rowBands } = gridMetrics;
+      const col = Math.floor(((clientX - left) / width) * 18) + 1;
+      if (col < 1 || col > 18) return null;
+      for (let i = 0; i < rowBands.length; i++) {
+        const b = rowBands[i];
+        if (clientY >= b.top && clientY <= b.bottom) {
+          return cellNumByCoord[b.r * 19 + col] || null;
         }
-        pv.classList.add("hidden");
-        dv.classList.add("visible");
-        root.querySelector('[data-field="num"]').textContent = padNum(el.num);
-        root.querySelector('[data-field="sym"]').textContent = el.sym;
-        root.querySelector('[data-field="ru"]').textContent = el.ru;
-        root.querySelector('[data-field="en"]').textContent = el.en;
-        root.querySelector('[data-field="mass"]').textContent = `Ar: ${el.mass}`;
-        const catBtn = root.querySelector('[data-field="cat"]');
-        catBtn.textContent = el.cat;
-        catBtn.classList.toggle("active", activeCategory === el.cat);
-        root.querySelector('[data-field="desc"]').textContent = el.desc;
-        root.querySelector('[data-field="feat"]').textContent = el.feat;
+      }
+      return null;
+    }
+
+    /* ===== STUDIO-LIT 3D SPHERE SPRITES ===== */
+    function bakeSphereSprite(size, cHi, cMid, cShad, cRim, halo) {
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const g = c.getContext("2d");
+      const m = size * 0.5, r = size * 0.34;
+      if (halo) {
+        const hg = g.createRadialGradient(m, m, r * 0.4, m, m, size * 0.49);
+        hg.addColorStop(0, halo);
+        hg.addColorStop(1, "rgba(0,0,0,0)");
+        g.fillStyle = hg;
+        g.beginPath(); g.arc(m, m, size * 0.49, 0, Math.PI * 2); g.fill();
+      }
+      const gr = g.createRadialGradient(m - r * 0.34, m - r * 0.34, r * 0.08, m, m, r);
+      gr.addColorStop(0, cHi); gr.addColorStop(0.45, cMid);
+      gr.addColorStop(0.86, cShad); gr.addColorStop(1, cRim);
+      g.fillStyle = gr;
+      g.beginPath(); g.arc(m, m, r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "rgba(255,255,255,0.88)";
+      g.beginPath(); g.arc(m - r * 0.32, m - r * 0.34, r * 0.16, 0, Math.PI * 2); g.fill();
+      return c;
+    }
+
+    const SPRITES = {
+      proton: bakeSphereSprite(64, "#ffbfa0", "#ff4500", "#5a1300", "#b82e00", "rgba(255,69,0,0.24)"),
+      neutron: bakeSphereSprite(64, "#bebec8", "#42424a", "#101012", "#54545e", null),
+      eValence: bakeSphereSprite(64, "#ffffff", "#ff6624", "#b82e00", "#ff4500", "rgba(255,69,0,0.5)"),
+      eCore: bakeSphereSprite(48, "#ffffff", "#dedee6", "#565660", "#9696a2", "rgba(255,255,255,0.16)"),
+      nodeAccent: bakeSphereSprite(64, "#ffd4bd", "#ff4500", "#591200", "#cc3700", "rgba(255,69,0,0.34)"),
+      nodeSteel: bakeSphereSprite(64, "#f2f2f7", "#72727e", "#17171b", "#62626e", null)
+    };
+
+    /* ===== 3D ENGINE ===== */
+    const KEY_L = { x: -0.44, y: -0.62, z: 0.65 };
+    const RIM_L = { x: 0.68, y: 0.52, z: -0.52 };
+    const HALF_V = (() => {
+      const hx = KEY_L.x, hy = KEY_L.y, hz = KEY_L.z + 1;
+      const l = Math.hypot(hx, hy, hz);
+      return { x: hx / l, y: hy / l, z: hz / l };
+    })();
+
+    const MAX_QUEUE = 1000;
+    const drawPool = Array.from({ length: MAX_QUEUE }, () => ({
+      type: 0,
+      z: 0, x1: 0, y1: 0, x2: 0, y2: 0, x3: 0, y3: 0,
+      r: 0, sprite: null, accent: false, alpha: 1,
+      pts: null, fill: "", stroke: "", lw: 1
+    }));
+    const activeQueue = [];
+
+    const HOME_X = 0.42, HOME_Y = 0.58;
+    const TAU = Math.PI * 2;
+    const wrapPi = (a) => ((a + Math.PI) % TAU + TAU) % TAU - Math.PI;
+
+    const engine = {
+      width: 300, height: 180,
+      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      rafId: 0, running: false,
+      mode: "atom",
+      el: ELEMENTS[0],
+
+      rotX: HOME_X, rotY: HOME_Y,
+      velX: 0, velY: 0.42, autoSpin: 0.42,
+      resettingCam: false,
+      zoom: 1.0, targetZoom: 1.0,
+
+      transState: "idle",
+      transT: 0, pendingEl: null,
+      morphScale: 1, morphVel: 0, zShift: 0, masterAlpha: 1,
+
+      pointers: new Map(),
+      dragging: false, dragDist: 0,
+      lastX: 0, lastY: 0, lastPinchDist: 0,
+
+      time: 0, lastFrame: 0, hudAccum: 0,
+      nucleus: [], shellsData: [],
+      latNodes: [], latEdges: [], latFaces: [], latProj: [],
+      specVerts: [], specFaces: [], specProj: [], particles: []
+    };
+
+    function startLoop() {
+      if (engine.running || document.hidden || selectedNum === null) return;
+      engine.running = true;
+      engine.lastFrame = performance.now();
+      engine.rafId = requestAnimationFrame(renderFrame);
+    }
+
+    function stopLoop() {
+      engine.running = false;
+      if (engine.rafId) { cancelAnimationFrame(engine.rafId); engine.rafId = 0; }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopLoop();
+      else startLoop();
+    });
+
+    function resizeCanvas() {
+      const w = stage3d.clientWidth;
+      const h = stage3d.clientHeight;
+      if (w < 2 || h < 2) return;
+      engine.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      engine.width = w;
+      engine.height = h;
+      canvas3d.width = Math.round(w * engine.dpr);
+      canvas3d.height = Math.round(h * engine.dpr);
+    }
+
+    new ResizeObserver(resizeCanvas).observe(stage3d);
+
+    function orientFaceOutward(verts, idxArr) {
+      const a = verts[idxArr[0]], b = verts[idxArr[1]], c = verts[idxArr[2]];
+      const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z;
+      const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z;
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      let cx = 0, cy = 0, cz = 0;
+      for (let i = 0; i < idxArr.length; i++) {
+        cx += verts[idxArr[i]].x; cy += verts[idxArr[i]].y; cz += verts[idxArr[i]].z;
+      }
+      if (nx * cx + ny * cy + nz * cz < 0) idxArr.reverse();
+      return idxArr;
+    }
+
+    /* ===== GEOMETRY BUILDERS ===== */
+    function buildElementGeometry(el) {
+      engine.el = el;
+
+      const nCount = Math.min(36, Math.max(1, Math.round(Math.pow(el.num, 0.66) * 1.38)));
+      const nuc = [];
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const spread = nCount === 1 ? 0 : 0.12 + Math.min(0.13, Math.pow(nCount, 0.33) * 0.034);
+      for (let i = 0; i < nCount; i++) {
+        const y = nCount === 1 ? 0 : 1 - (i / (nCount - 1)) * 2;
+        const rS = Math.sqrt(Math.max(0, 1 - y * y));
+        const th = golden * i + el.num * 0.37;
+        const rad = spread * (0.68 + 0.32 * ((i * 7) % 5) / 4);
+        nuc.push({ x: Math.cos(th) * rS * rad, y: y * rad, z: Math.sin(th) * rS * rad, isProton: i % 2 === 0 });
+      }
+      engine.nucleus = nuc;
+
+      const shells = el.shells, total = shells.length;
+      const shData = [];
+      for (let s = 0; s < total; s++) {
+        const frac = (s + 1) / Math.max(total, 1);
+        const radius = 0.30 + Math.pow(frac, 0.88) * 0.68;
+        const tiltX = ((s * 1.11 + (el.num % 9) * 0.14) % Math.PI) - Math.PI * 0.5;
+        const tiltZ = ((s * 1.618 + (el.num % 7) * 0.19) % Math.PI) - Math.PI * 0.5;
+        shData.push({
+          radius, eCount: shells[s],
+          cTx: Math.cos(tiltX), sTx: Math.sin(tiltX),
+          cTz: Math.cos(tiltZ), sTz: Math.sin(tiltZ),
+          speed: (s % 2 === 0 ? 1 : -1) * (1.5 / (0.65 + s * 0.36)),
+          isValence: s === total - 1,
+          phase: s * 1.35 + el.num * 0.4
+        });
+      }
+      engine.shellsData = shData;
+
+      buildLattice(el);
+      buildSpecimen(el);
+      update3DHudText();
+    }
+
+    function buildLattice(el) {
+      const kind = el.struct.id;
+      const nodes = [], edges = [], faces = [];
+      const edgeSeen = new Set();
+      const addE = (a, b, acc = false) => {
+        const key = a < b ? a * 256 + b : b * 256 + a;
+        if (edgeSeen.has(key)) return;
+        edgeSeen.add(key);
+        edges.push([a, b, acc]);
+      };
+      const addF = (arr, acc = false) => faces.push({ idx: orientFaceOutward(nodes, arr.slice()), acc });
+
+      if (kind === "s8") {
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * TAU;
+          nodes.push({ x: Math.cos(a) * 0.68, y: (i % 2 === 0 ? 0.19 : -0.19), z: Math.sin(a) * 0.68, acc: i % 2 === 0, r: 1.35 });
+        }
+        for (let i = 0; i < 8; i++) addE(i, (i + 1) % 8, true);
+        for (let i = 0; i < 8; i += 2) addE(i, (i + 2) % 8, false);
+        addF([0, 2, 4, 6], true);
+      } else if (kind === "p4") {
+        const s = 0.56;
+        nodes.push({x:s,y:s,z:s,acc:true,r:1.5},{x:s,y:-s,z:-s,acc:true,r:1.5},{x:-s,y:s,z:-s,acc:true,r:1.5},{x:-s,y:-s,z:s,acc:true,r:1.5});
+        for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) addE(i, j, true);
+        [[0,1,2],[0,1,3],[0,2,3],[1,2,3]].forEach(f => addF(f, true));
+      } else if (kind === "bcc" || kind === "fcc") {
+        const s = 0.55;
+        for (let ix = -1; ix <= 1; ix += 2)
+          for (let iy = -1; iy <= 1; iy += 2)
+            for (let iz = -1; iz <= 1; iz += 2)
+              nodes.push({ x: ix * s, y: iy * s, z: iz * s, acc: false, r: 1.0 });
+        [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b]) => addE(a,b,false));
+        [[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]].forEach(f => addF(f, false));
+        if (kind === "bcc") {
+          const c = nodes.length;
+          nodes.push({ x: 0, y: 0, z: 0, acc: true, r: 1.45 });
+          for (let i = 0; i < 8; i++) addE(c, i, true);
+        } else {
+          const st = nodes.length;
+          [[s,0,0],[-s,0,0],[0,s,0],[0,-s,0],[0,0,s],[0,0,-s]].forEach(([x,y,z]) => nodes.push({x,y,z,acc:true,r:1.15}));
+          [[0,2],[0,3],[0,4],[0,5],[1,2],[1,3],[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]].forEach(([a,b]) => addE(st+a,st+b,true));
+          [[0,2,4],[0,4,3],[0,3,5],[0,5,2],[1,2,4],[1,4,3],[1,3,5],[1,5,2]].forEach(f => addF(f.map(k => st+k), true));
+        }
+      } else if (kind === "hcp") {
+        const R = 0.62, H = 0.52;
+        for (let l = -1; l <= 1; l += 2) {
+          const base = nodes.length, y = l * H;
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * TAU;
+            nodes.push({ x: Math.cos(a) * R, y, z: Math.sin(a) * R, acc: false, r: 0.95 });
+          }
+          const c = nodes.length;
+          nodes.push({ x: 0, y, z: 0, acc: true, r: 1.15 });
+          for (let i = 0; i < 6; i++) { addE(base+i, base+((i+1)%6), false); addE(c, base+i, false); }
+          addF([base,base+1,base+2,base+3,base+4,base+5], false);
+        }
+        for (let i = 0; i < 6; i++) { addE(i, 7+i, false); addF([i, (i+1)%6, 7+((i+1)%6), 7+i], false); }
+        const m = nodes.length;
+        for (let i = 0; i < 3; i++) {
+          const a = (i / 3) * TAU + Math.PI / 6;
+          nodes.push({ x: Math.cos(a) * R * 0.55, y: 0, z: Math.sin(a) * R * 0.55, acc: true, r: 1.3 });
+        }
+        addE(m, m+1, true); addE(m+1, m+2, true); addE(m+2, m, true);
+        addF([m, m+1, m+2], true);
+      } else if (kind === "diamond") {
+        const s = 0.58;
+        [[-s,-s,-s],[s,s,-s],[s,-s,s],[-s,s,s],[s,-s,-s],[-s,s,-s],[-s,-s,s],[s,s,s]].forEach(([x,y,z], i) => {
+          nodes.push({ x, y, z, acc: i < 4, r: 0.95 });
+        });
+        [[0,4],[0,5],[0,6],[7,1],[7,2],[7,3],[4,1],[4,2],[5,1],[5,3],[6,2],[6,3]].forEach(([a,b]) => addE(a,b,false));
+        const t = 0.28, b = nodes.length;
+        [[0,0,0],[-t,-t,-t],[t,t,-t],[t,-t,t],[-t,t,t]].forEach(([x,y,z]) => nodes.push({ x, y, z, acc: true, r: 1.25 }));
+        for (let i = 1; i <= 4; i++) { addE(b, b+i, true); addE(b+i, i-1, true); }
+        [[b+1,b+2,b+3],[b+1,b+2,b+4],[b+1,b+3,b+4],[b+2,b+3,b+4]].forEach(f => addF(f, true));
+      } else if (kind === "gas2") {
+        const d = 0.42;
+        nodes.push({ x: -d, y: 0, z: 0, acc: true, r: 1.9 }, { x: d, y: 0, z: 0, acc: true, r: 1.9 });
+        const bonds = el.num === 7 ? 3 : (el.num === 8 ? 2 : 1);
+        for (let i = 0; i < bonds; i++) {
+          const off = (i - (bonds - 1) / 2) * 0.14, a = nodes.length;
+          nodes.push({ x: -d, y: off, z: 0, acc: false, r: 0.01 }, { x: d, y: off, z: 0, acc: false, r: 0.01 });
+          addE(a, a + 1, true);
+        }
+        const rs = nodes.length;
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * TAU;
+          nodes.push({ x: Math.cos(a) * 0.84, y: Math.sin(a) * 0.46, z: 0, acc: false, r: 0.35 });
+          if (i > 0) addE(rs + i - 1, rs + i, false);
+        }
+        addE(rs + 11, rs, false);
+      } else if (kind === "noble") {
+        const phi = (1 + Math.sqrt(5)) / 2, sc = 0.43;
+        [[-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],[0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],[phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]]
+          .forEach(([x,y,z]) => nodes.push({ x: x*sc, y: y*sc, z: z*sc, acc: false, r: 0.8 }));
+        const ico = [[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+        ico.forEach((f, idx) => { addF(f, idx % 5 === 0); addE(f[0],f[1],false); addE(f[1],f[2],false); addE(f[2],f[0],false); });
+        nodes.push({ x: 0, y: 0, z: 0, acc: true, r: 1.85 });
+      } else if (kind === "liquid") {
+        const golden = Math.PI * (3 - Math.sqrt(5));
+        for (let i = 0; i < 16; i++) {
+          const y = 1 - (i / 15) * 2, rS = Math.sqrt(1 - y * y), th = golden * i + el.num;
+          const rad = 0.54 + 0.16 * Math.sin(i * 2.1);
+          nodes.push({ x: Math.cos(th)*rS*rad, y: y*rad, z: Math.sin(th)*rS*rad, acc: i % 3 === 0, r: i % 3 === 0 ? 1.35 : 0.95, phase: i * 0.7 });
+        }
+        for (let i = 0; i < nodes.length; i++)
+          for (let j = i + 1; j < nodes.length; j++)
+            if (Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y, nodes[i].z - nodes[j].z) < 0.64)
+              addE(i, j, nodes[i].acc && nodes[j].acc);
+      } else if (kind === "radio") {
+        const r = 0.76;
+        [[r,0,0],[-r,0,0],[0,r,0],[0,-r,0],[0,0,r],[0,0,-r]].forEach(([x,y,z]) => nodes.push({x,y,z,acc:true,r:1.05}));
+        [[0,2,4],[0,4,3],[0,3,5],[0,5,2],[1,2,4],[1,4,3],[1,3,5],[1,5,2]].forEach(f => {
+          addF(f, true); addE(f[0],f[1],true); addE(f[1],f[2],true); addE(f[2],f[0],true);
+        });
+        nodes.push({ x: 0, y: 0, z: 0, acc: true, r: 1.9 });
+      } else {
+        const sx = 0.66, sy = 0.48, sz = 0.52, skew = 0.16;
+        for (let ix = -1; ix <= 1; ix += 2)
+          for (let iy = -1; iy <= 1; iy += 2)
+            for (let iz = -1; iz <= 1; iz += 2)
+              nodes.push({ x: ix*sx + iy*skew, y: iy*sy, z: iz*sz, acc: false, r: 0.95 });
+        [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b]) => addE(a,b,false));
+        [[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]].forEach(f => addF(f, false));
+        const m = nodes.length;
+        nodes.push({ x: -0.22, y: 0, z: 0.16, acc: true, r: 1.3 }, { x: 0.22, y: 0, z: -0.16, acc: true, r: 1.3 });
+        addE(m, m+1, true); addE(m, 0, true); addE(m, 3, true); addE(m+1, 4, true); addE(m+1, 7, true);
       }
 
-      if (el) {
-        hudMain.textContent = `${el.num} · ${el.sym} · ${el.ru.toUpperCase()}`;
-        hudSub.textContent = `${el.cat.toUpperCase()} · Ar ${el.mass}`;
-        resetBtn.classList.remove("active");
+      engine.latNodes = nodes;
+      engine.latEdges = edges;
+      engine.latFaces = faces;
+      engine.latProj = nodes.map(() => ({ sx: 0, sy: 0, rx: 0, ry: 0, z: 0, p: 1 }));
+    }
+
+    function buildSpecimen(el) {
+      const sp = el.struct.spec;
+      const verts = [], faces = [], particles = [];
+      const pushF = (idx, accent = false) => faces.push({ idx: orientFaceOutward(verts, idx.slice()), accent });
+      const seed = ((el.num * 2654435761) >>> 0) / 4294967296;
+
+      if (sp === "ingot") {
+        const w = 0.72 + seed * 0.14, h = 0.34 + (el.num % 5) * 0.025, d = 0.44;
+        const tw = w * 0.76, td = d * 0.74;
+        verts.push(
+          {x:-w,y:h,z:-d},{x:w,y:h,z:-d},{x:w,y:h,z:d},{x:-w,y:h,z:d},
+          {x:-tw,y:-h,z:-td},{x:tw,y:-h,z:-td},{x:tw,y:-h,z:td},{x:-tw,y:-h,z:td}
+        );
+        [[0,1,2,3],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]].forEach(f => pushF(f, false));
+        pushF([4,5,6,7], true);
+      } else if (sp === "octa") {
+        const s = 0.56;
+        [[s,s,0],[s,-s,0],[-s,s,0],[-s,-s,0],[s,0,s],[s,0,-s],[-s,0,s],[-s,0,-s],[0,s,s],[0,s,-s],[0,-s,s],[0,-s,-s]]
+          .forEach(([x,y,z]) => verts.push({x,y,z}));
+        [[0,4,1,5],[2,6,3,7],[0,8,2,9],[1,10,3,11],[4,8,6,10],[5,9,7,11]].forEach(f => pushF(f, false));
+        [[0,4,8],[0,9,5],[1,10,4],[1,5,11],[2,8,6],[2,7,9],[3,6,10],[3,11,7]].forEach(f => pushF(f, true));
+      } else if (sp === "hex") {
+        const R = 0.58, rTop = 0.42, H = 0.44, capH = 0.66;
+        const ring = (rad, y) => {
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * TAU;
+            verts.push({ x: Math.cos(a) * rad, y, z: Math.sin(a) * rad });
+          }
+        };
+        ring(R, -H); ring(R, H); ring(rTop, -capH); ring(rTop, capH);
+        for (let i = 0; i < 6; i++) {
+          const n = (i + 1) % 6;
+          pushF([i, n, 6+n, 6+i], false);
+          pushF([i, n, 12+n, 12+i], true);
+          pushF([6+i, 6+n, 18+n, 18+i], true);
+        }
+        pushF([12,13,14,15,16,17], false);
+        pushF([18,19,20,21,22,23], false);
+      } else if (sp === "gem" || sp === "crystal") {
+        const sides = sp === "gem" ? 8 : 6;
+        const R = 0.58 + seed * 0.1, tip = sp === "gem" ? 0.8 : 0.88, belt = sp === "gem" ? 0.16 : 0.34;
+        verts.push({ x: 0, y: -tip, z: 0 }, { x: 0, y: tip, z: 0 });
+        for (let i = 0; i < sides; i++) {
+          const a = (i / sides) * TAU;
+          verts.push({ x: Math.cos(a) * R, y: -belt, z: Math.sin(a) * R });
+        }
+        for (let i = 0; i < sides; i++) {
+          const a = (i / sides) * TAU + (sp === "gem" ? Math.PI / sides : 0);
+          verts.push({ x: Math.cos(a) * R, y: belt, z: Math.sin(a) * R });
+        }
+        for (let i = 0; i < sides; i++) {
+          const n = (i + 1) % sides, u1 = 2+i, u2 = 2+n, d1 = 2+sides+i, d2 = 2+sides+n;
+          pushF([0, u1, u2], i % 2 === 0);
+          pushF([1, d1, d2], i % 2 === 1);
+          if (sp === "gem") {
+            pushF([u1, u2, d1], false);
+            pushF([u2, d2, d1], false);
+          } else {
+            pushF([u1, u2, d2, d1], false);
+          }
+        }
+      } else if (sp === "droplet") {
+        const rings = 8, segs = 16, R = 0.68;
+        verts.push({ x: 0, y: -R, z: 0, bx: 0, by: -R, bz: 0 });
+        for (let r = 1; r < rings; r++) {
+          const phi = (r / rings) * Math.PI, y = -Math.cos(phi) * R, rr = Math.sin(phi) * R;
+          for (let s = 0; s < segs; s++) {
+            const th = (s / segs) * TAU;
+            const vx = Math.cos(th) * rr, vz = Math.sin(th) * rr;
+            verts.push({ x: vx, y, z: vz, bx: vx, by: y, bz: vz });
+          }
+        }
+        const bot = verts.length;
+        verts.push({ x: 0, y: R, z: 0, bx: 0, by: R, bz: 0 });
+        for (let s = 0; s < segs; s++) {
+          const n = (s + 1) % segs;
+          pushF([0, 1 + s, 1 + n], false);
+          pushF([bot, 1 + (rings - 2) * segs + s, 1 + (rings - 2) * segs + n], false);
+        }
+        for (let r = 0; r < rings - 2; r++) {
+          const r1 = 1 + r * segs, r2 = r1 + segs;
+          for (let s = 0; s < segs; s++) {
+            const n = (s + 1) % segs;
+            pushF([r1 + s, r1 + n, r2 + n, r2 + s], false);
+          }
+        }
       } else {
-        hudMain.textContent = "ВЕДИ ПАЛЬЦЕМ ПО СЕТКЕ";
-        hudSub.textContent = "18 ГРУПП · 7 ПЕРИОДОВ";
-        resetBtn.classList.add("active");
+        const s = 0.62;
+        for (let ix = -1; ix <= 1; ix += 2)
+          for (let iy = -1; iy <= 1; iy += 2)
+            for (let iz = -1; iz <= 1; iz += 2)
+              verts.push({ x: ix * s, y: iy * s, z: iz * s });
+        [[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]].forEach(f => pushF(f, sp === "reactor"));
+        const pCount = sp === "reactor" ? 18 : 26;
+        for (let i = 0; i < pCount; i++) {
+          particles.push({
+            rx: 0.16 + ((i * 19) % 10) * 0.036,
+            ry: 0.16 + ((i * 13) % 10) * 0.036,
+            rz: 0.16 + ((i * 23) % 10) * 0.036,
+            sx: 1.1 + (i % 5) * 0.45,
+            sy: 1.3 + (i % 4) * 0.5,
+            sz: 0.9 + (i % 6) * 0.35,
+            ph: (i / pCount) * Math.PI * 4.2,
+            accent: sp === "reactor" ? true : (i % 2 === 0)
+          });
+        }
+      }
+
+      engine.specVerts = verts;
+      engine.specFaces = faces;
+      engine.specProj = verts.map(() => ({ sx: 0, sy: 0, rx: 0, ry: 0, rz: 0, p: 1 }));
+      engine.particles = particles;
+    }
+
+    function update3DHudText() {
+      const el = engine.el;
+      if (!el) return;
+      if (engine.mode === "atom") hud3dLabel.textContent = `3D // АТОМ · Z=${el.num}`;
+      else if (engine.mode === "lattice") hud3dLabel.textContent = `3D // ${el.struct.name}`;
+      else hud3dLabel.textContent = `3D // ${el.struct.specName}`;
+      const sh = el.shells, head = sh.slice(0, -1).join("·"), val = sh[sh.length - 1];
+      hudShells.innerHTML = head ? `e⁻: ${head}·<b>${val}</b>` : `e⁻: <b>${val}</b>`;
+    }
+
+    function drawTelemetryRing(cx, cy, scale, camDist, cosX, sinX, cosY, sinY) {
+      const r = 1.06, y = engine.mode === "atom" ? 0 : 0.78, steps = 48;
+      ctx.strokeStyle = "rgba(255, 69, 0, 0.14)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * TAU;
+        const x = Math.cos(a) * r, z = Math.sin(a) * r;
+        const rx = x * cosY + z * sinY, rz1 = -x * sinY + z * cosY;
+        const ry = y * cosX - rz1 * sinX, rz = y * sinX + rz1 * cosX + engine.zShift;
+        const p = camDist / (camDist - rz);
+        const sx = cx + rx * scale * p, sy = cy + ry * scale * p;
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 69, 0, 0.34)";
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * TAU;
+        for (let k = 0; k < 2; k++) {
+          const rad = k === 0 ? r * 0.94 : r * 1.04;
+          const x = Math.cos(a) * rad, z = Math.sin(a) * rad;
+          const rx = x * cosY + z * sinY, rz1 = -x * sinY + z * cosY;
+          const ry = y * cosX - rz1 * sinX, rz = y * sinX + rz1 * cosX + engine.zShift;
+          const p = camDist / (camDist - rz);
+          const sx = cx + rx * scale * p, sy = cy + ry * scale * p;
+          if (k === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+      }
+      ctx.stroke();
+    }
+
+    /* ===== MAIN 120FPS RENDER LOOP ===== */
+    function renderFrame(now) {
+      if (!engine.running) return;
+      engine.rafId = requestAnimationFrame(renderFrame);
+
+      const dt = Math.min(0.05, Math.max(0.001, (now - engine.lastFrame) / 1000));
+      engine.lastFrame = now;
+      engine.time += dt;
+
+      if (engine.transState === "out") {
+        engine.transT += dt / 0.13;
+        const k = Math.min(1, engine.transT), ease = k * k;
+        engine.morphScale = 1 - ease * 0.45;
+        engine.zShift = -ease * 1.35;
+        engine.masterAlpha = 1 - ease;
+        engine.rotY += dt * 3.8;
+        if (k >= 1) {
+          if (engine.pendingEl) { buildElementGeometry(engine.pendingEl); engine.pendingEl = null; }
+          engine.transState = "in";
+          engine.morphScale = 0.54;
+          engine.morphVel = 6.2;
+          engine.zShift = -1.05;
+          engine.masterAlpha = 0.05;
+          engine.velY = (engine.velY >= 0 ? 1 : -1) * 2.4;
+        }
+      } else if (engine.transState === "in") {
+        const force = (1 - engine.morphScale) * 185;
+        engine.morphVel = (engine.morphVel + force * dt) * Math.exp(-16 * dt);
+        engine.morphScale += engine.morphVel * dt;
+        engine.zShift *= Math.exp(-14 * dt);
+        engine.masterAlpha = Math.min(1, engine.masterAlpha + dt * 6.5);
+        if (Math.abs(1 - engine.morphScale) < 0.002 && Math.abs(engine.morphVel) < 0.01 && engine.masterAlpha >= 0.99) {
+          engine.morphScale = 1; engine.zShift = 0; engine.masterAlpha = 1; engine.transState = "idle";
+        }
+      }
+
+      engine.zoom += (engine.targetZoom - engine.zoom) * (1 - Math.exp(-14 * dt));
+
+      if (engine.resettingCam) {
+        const k = 1 - Math.exp(-10 * dt);
+        const dX = wrapPi(HOME_X - engine.rotX);
+        const dY = wrapPi(HOME_Y - engine.rotY);
+        engine.rotX += dX * k;
+        engine.rotY += dY * k;
+        engine.velX = 0; engine.velY = engine.autoSpin;
+        if (Math.abs(dX) < 0.004 && Math.abs(dY) < 0.004) {
+          engine.rotX = HOME_X; engine.rotY = HOME_Y; engine.resettingCam = false;
+        }
+      } else if (!engine.dragging) {
+        engine.rotX += engine.velX * dt;
+        engine.rotY += engine.velY * dt;
+        const decay = Math.exp(-3.4 * dt);
+        engine.velX *= decay;
+        engine.velY = engine.autoSpin + (engine.velY - engine.autoSpin) * decay;
+      }
+
+      engine.hudAccum += dt;
+      if (engine.hudAccum > 0.07) {
+        engine.hudAccum = 0;
+        const dx = (((Math.round(engine.rotX * 57.2958) % 360) + 360) % 360);
+        const dy = (((Math.round(engine.rotY * 57.2958) % 360) + 360) % 360);
+        hudAngles.textContent = `X:${String(dx).padStart(3, "0")}° Y:${String(dy).padStart(3, "0")}°`;
+      }
+
+      const w = engine.width, h = engine.height, dpr = engine.dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, w, h);
+
+      const cx = w * 0.5, cy = h * 0.5, minDim = Math.min(w, h);
+      const scale = minDim * 0.41 * engine.zoom * Math.max(0.1, engine.morphScale);
+      const camDist = 3.25;
+
+      const cosX = Math.cos(engine.rotX), sinX = Math.sin(engine.rotX);
+      const cosY = Math.cos(engine.rotY), sinY = Math.sin(engine.rotY);
+
+      ctx.globalAlpha = engine.masterAlpha;
+      drawTelemetryRing(cx, cy, scale, camDist, cosX, sinX, cosY, sinY);
+
+      if (engine.mode === "atom") drawAtom(cx, cy, scale, camDist, cosX, sinX, cosY, sinY);
+      else if (engine.mode === "lattice") drawLattice(cx, cy, scale, camDist, cosX, sinX, cosY, sinY);
+      else drawSpecimen(cx, cy, scale, camDist, cosX, sinX, cosY, sinY);
+
+      ctx.globalAlpha = 1;
+    }
+
+    /* Zero-allocation scalar orbital renderer */
+    function drawAtom(cx, cy, scale, camDist, cosX, sinX, cosY, sinY) {
+      const t = engine.time, zOff = engine.zShift;
+      let qLen = 0;
+
+      const segs = 28;
+      for (let s = 0; s < engine.shellsData.length; s++) {
+        const sh = engine.shellsData[s];
+        const r = sh.radius, cTx = sh.cTx, sTx = sh.sTx, cTz = sh.cTz, sTz = sh.sTz;
+
+        let pSx = 0, pSy = 0, pZ = 0;
+        for (let i = 0; i <= segs; i++) {
+          const ang = (i / segs) * TAU;
+          const lx = Math.cos(ang) * r, lz = Math.sin(ang) * r;
+          const y1 = -lz * sTx, z1 = lz * cTx;
+          const x2 = lx * cTz - y1 * sTz, y2 = lx * sTz + y1 * cTz;
+          const rx = x2 * cosY + z1 * sinY, rz1 = -x2 * sinY + z1 * cosY;
+          const ry = y2 * cosX - rz1 * sinX, rz = y2 * sinX + rz1 * cosX + zOff;
+          const p = camDist / (camDist - rz);
+          const sx = cx + rx * scale * p, sy = cy + ry * scale * p;
+          if (i > 0 && qLen < MAX_QUEUE) {
+            const it = drawPool[qLen++];
+            it.type = 0; it.z = (pZ + rz) * 0.5;
+            it.x1 = pSx; it.y1 = pSy; it.x2 = sx; it.y2 = sy;
+            it.accent = sh.isValence;
+          }
+          pSx = sx; pSy = sy; pZ = rz;
+        }
+
+        const dir = sh.speed >= 0 ? 1 : -1;
+        const eSprite = sh.isValence ? SPRITES.eValence : SPRITES.eCore;
+        const eBase = sh.isValence ? 10.8 : 6.2;
+
+        for (let e = 0; e < sh.eCount; e++) {
+          if (qLen >= MAX_QUEUE) break;
+          const a0 = sh.phase + t * sh.speed + (e / sh.eCount) * TAU;
+          const a1 = a0 - dir * 0.12, a2 = a0 - dir * 0.25;
+
+          // Head (a0)
+          let lx = Math.cos(a0) * r, lz = Math.sin(a0) * r;
+          let y1 = -lz * sTx, z1 = lz * cTx;
+          let x2 = lx * cTz - y1 * sTz, y2 = lx * sTz + y1 * cTz;
+          let rx = x2 * cosY + z1 * sinY, rz1 = -x2 * sinY + z1 * cosY;
+          let ry = y2 * cosX - rz1 * sinX, rz0 = y2 * sinX + rz1 * cosX + zOff;
+          let p0 = camDist / (camDist - rz0);
+          const sx0 = cx + rx * scale * p0, sy0 = cy + ry * scale * p0;
+
+          // Control (a1)
+          lx = Math.cos(a1) * r; lz = Math.sin(a1) * r;
+          y1 = -lz * sTx; z1 = lz * cTx;
+          x2 = lx * cTz - y1 * sTz; y2 = lx * sTz + y1 * cTz;
+          rx = x2 * cosY + z1 * sinY; rz1 = -x2 * sinY + z1 * cosY;
+          ry = y2 * cosX - rz1 * sinX;
+          let p1 = camDist / (camDist - (y2 * sinX + rz1 * cosX + zOff));
+          const sx1 = cx + rx * scale * p1, sy1 = cy + ry * scale * p1;
+
+          // Tail (a2)
+          lx = Math.cos(a2) * r; lz = Math.sin(a2) * r;
+          y1 = -lz * sTx; z1 = lz * cTx;
+          x2 = lx * cTz - y1 * sTz; y2 = lx * sTz + y1 * cTz;
+          rx = x2 * cosY + z1 * sinY; rz1 = -x2 * sinY + z1 * cosY;
+          ry = y2 * cosX - rz1 * sinX;
+          let p2 = camDist / (camDist - (y2 * sinX + rz1 * cosX + zOff));
+          const sx2 = cx + rx * scale * p2, sy2 = cy + ry * scale * p2;
+
+          const it = drawPool[qLen++];
+          it.type = 3; it.z = rz0;
+          it.x1 = sx0; it.y1 = sy0; it.x2 = sx1; it.y2 = sy1; it.x3 = sx2; it.y3 = sy2;
+          it.r = eBase * p0;
+          it.sprite = eSprite;
+          it.accent = sh.isValence;
+        }
+      }
+
+      const pulse = 1 + Math.sin(t * 3.2) * 0.024;
+      const nucSize = Math.max(9.5, scale * 0.2);
+      for (let i = 0; i < engine.nucleus.length; i++) {
+        if (qLen >= MAX_QUEUE) break;
+        const n = engine.nucleus[i];
+        const x = n.x * pulse, y = n.y * pulse, z = n.z * pulse;
+        const rx = x * cosY + z * sinY, rz1 = -x * sinY + z * cosY;
+        const ry = y * cosX - rz1 * sinX, rz = y * sinX + rz1 * cosX + zOff;
+        const p = camDist / (camDist - rz);
+        const it = drawPool[qLen++];
+        it.type = 1; it.z = rz;
+        it.x1 = cx + rx * scale * p; it.y1 = cy + ry * scale * p;
+        it.r = nucSize * p;
+        it.sprite = n.isProton ? SPRITES.proton : SPRITES.neutron;
+      }
+
+      activeQueue.length = qLen;
+      for (let i = 0; i < qLen; i++) activeQueue[i] = drawPool[i];
+      activeQueue.sort((a, b) => a.z - b.z);
+
+      for (let i = 0; i < qLen; i++) {
+        const it = activeQueue[i];
+        if (it.type === 0) {
+          const depth = Math.max(0.14, Math.min(1, (it.z + 1.15) / 2.2));
+          ctx.strokeStyle = it.accent ? "#FF4500" : "#cfcfcf";
+          ctx.globalAlpha = engine.masterAlpha * (it.accent ? (0.18 + depth * 0.56) : (0.06 + depth * 0.2));
+          ctx.lineWidth = it.accent ? (0.85 + depth * 0.75) : (0.6 + depth * 0.35);
+          ctx.beginPath(); ctx.moveTo(it.x1, it.y1); ctx.lineTo(it.x2, it.y2); ctx.stroke();
+        } else if (it.type === 1) {
+          ctx.globalAlpha = engine.masterAlpha;
+          const d = it.r;
+          ctx.drawImage(it.sprite, it.x1 - d * 0.5, it.y1 - d * 0.5, d, d);
+        } else if (it.type === 3) {
+          ctx.strokeStyle = it.accent ? "#FF4500" : "#ffffff";
+          ctx.globalAlpha = engine.masterAlpha * (it.accent ? 0.62 : 0.3);
+          ctx.lineWidth = it.accent ? 1.5 : 0.95;
+          ctx.beginPath(); ctx.moveTo(it.x3, it.y3); ctx.quadraticCurveTo(it.x2, it.y2, it.x1, it.y1); ctx.stroke();
+          ctx.globalAlpha = engine.masterAlpha;
+          const d = it.r;
+          ctx.drawImage(it.sprite, it.x1 - d * 0.5, it.y1 - d * 0.5, d, d);
+        }
       }
     }
 
-    function selectElement(num) {
+    function drawLattice(cx, cy, scale, camDist, cosX, sinX, cosY, sinY) {
+      const t = engine.time, kind = engine.el.struct.id, zOff = engine.zShift;
+      const nodes = engine.latNodes, proj = engine.latProj;
+
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        let x = n.x, y = n.y, z = n.z;
+        if (kind === "liquid") {
+          const ph = n.phase || i;
+          x += Math.sin(t * 2.2 + ph) * 0.055;
+          y += Math.cos(t * 1.9 + ph * 1.3) * 0.055;
+          z += Math.sin(t * 2.5 - ph) * 0.055;
+        } else if (kind === "radio") {
+          const j = 0.018 * Math.sin(t * 10 + i * 1.9);
+          x += x * j; y += y * j; z += z * j;
+        } else if (kind === "gas2" && i < 2) {
+          x += (i === 0 ? -1 : 1) * Math.sin(t * 5.2) * 0.032;
+        }
+        const rx = x * cosY + z * sinY, rz1 = -x * sinY + z * cosY;
+        const ry = y * cosX - rz1 * sinX, rz = y * sinX + rz1 * cosX + zOff;
+        const p = camDist / (camDist - rz);
+        const out = proj[i];
+        out.sx = cx + rx * scale * p; out.sy = cy + ry * scale * p;
+        out.rx = rx; out.ry = ry; out.z = rz; out.p = p;
+      }
+
+      let qLen = 0;
+
+      for (let i = 0; i < engine.latFaces.length; i++) {
+        if (qLen >= MAX_QUEUE) break;
+        const f = engine.latFaces[i], idx = f.idx;
+        const p0 = proj[idx[0]], p1 = proj[idx[1]], p2 = proj[idx[2]];
+        const ux = p1.rx - p0.rx, uy = p1.ry - p0.ry, uz = p1.z - p0.z;
+        const vx = p2.rx - p0.rx, vy = p2.ry - p0.ry, vz = p2.z - p0.z;
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const nLen = Math.hypot(nx, ny, nz) || 1;
+        nx /= nLen; ny /= nLen; nz /= nLen;
+        const diff = Math.abs(nx * KEY_L.x + ny * KEY_L.y + nz * KEY_L.z);
+        let avgZ = 0;
+        for (let k = 0; k < idx.length; k++) avgZ += proj[idx[k]].z;
+        avgZ /= idx.length;
+        const it = drawPool[qLen++];
+        it.type = 2; it.z = avgZ - 0.04; it.pts = idx; it.accent = f.acc;
+        it.alpha = f.acc ? (0.06 + diff * 0.17) : (0.03 + diff * 0.09);
+      }
+
+      for (let i = 0; i < engine.latEdges.length; i++) {
+        if (qLen >= MAX_QUEUE) break;
+        const e = engine.latEdges[i], pa = proj[e[0]], pb = proj[e[1]];
+        const it = drawPool[qLen++];
+        it.type = 0; it.z = (pa.z + pb.z) * 0.5;
+        it.x1 = pa.sx; it.y1 = pa.sy; it.x2 = pb.sx; it.y2 = pb.sy; it.accent = e[2];
+      }
+
+      if (kind === "radio") {
+        for (let i = 0; i < 6; i++) {
+          if (qLen >= MAX_QUEUE) break;
+          const life = (t * 0.72 + i / 6) % 1;
+          const a = i * 2.1 + 0.5, elv = ((i % 3) - 1) * 0.7, d = 0.14 + life * 0.92;
+          const px = Math.cos(a) * Math.cos(elv) * d, py = Math.sin(elv) * d, pz = Math.sin(a) * Math.cos(elv) * d;
+          const rx = px * cosY + pz * sinY, rz1 = -px * sinY + pz * cosY;
+          const ry = py * cosX - rz1 * sinX, rz = py * sinX + rz1 * cosX + zOff;
+          const p = camDist / (camDist - rz);
+          const it = drawPool[qLen++];
+          it.type = 1; it.z = rz; it.x1 = cx + rx * scale * p; it.y1 = cy + ry * scale * p;
+          it.r = (1 - life) * 14 * p; it.sprite = SPRITES.eValence;
+        }
+      }
+
+      const baseD = Math.max(10.5, scale * 0.21);
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].r < 0.05 || qLen >= MAX_QUEUE) continue;
+        const p = proj[i], it = drawPool[qLen++];
+        it.type = 1; it.z = p.z; it.x1 = p.sx; it.y1 = p.sy;
+        it.r = baseD * nodes[i].r * p.p;
+        it.sprite = nodes[i].acc ? SPRITES.nodeAccent : SPRITES.nodeSteel;
+      }
+
+      activeQueue.length = qLen;
+      for (let i = 0; i < qLen; i++) activeQueue[i] = drawPool[i];
+      activeQueue.sort((a, b) => a.z - b.z);
+
+      for (let i = 0; i < qLen; i++) {
+        const it = activeQueue[i];
+        if (it.type === 2) {
+          ctx.fillStyle = it.accent ? "#FF4500" : "#d8d8de";
+          ctx.globalAlpha = engine.masterAlpha * it.alpha;
+          ctx.beginPath();
+          const idx = it.pts;
+          ctx.moveTo(proj[idx[0]].sx, proj[idx[0]].sy);
+          for (let k = 1; k < idx.length; k++) ctx.lineTo(proj[idx[k]].sx, proj[idx[k]].sy);
+          ctx.closePath();
+          ctx.fill();
+        } else if (it.type === 0) {
+          const depth = Math.max(0.2, Math.min(1, (it.z + 1.1) / 2.1));
+          ctx.strokeStyle = it.accent ? "#FF4500" : "#cfcfcf";
+          ctx.globalAlpha = engine.masterAlpha * (it.accent ? (0.3 + depth * 0.65) : (0.14 + depth * 0.4));
+          ctx.lineWidth = it.accent ? (1.1 + depth * 0.9) : (0.8 + depth * 0.5);
+          ctx.beginPath(); ctx.moveTo(it.x1, it.y1); ctx.lineTo(it.x2, it.y2); ctx.stroke();
+        } else if (it.type === 1) {
+          ctx.globalAlpha = engine.masterAlpha;
+          const d = it.r;
+          ctx.drawImage(it.sprite, it.x1 - d * 0.5, it.y1 - d * 0.5, d, d);
+        }
+      }
+    }
+
+    function drawSpecimen(cx, cy, scale, camDist, cosX, sinX, cosY, sinY) {
+      const t = engine.time, sp = engine.el.struct.spec, zOff = engine.zShift;
+      const verts = engine.specVerts, proj = engine.specProj;
+      const isTranslucent = (sp === "plasma" || sp === "reactor");
+
+      for (let i = 0; i < verts.length; i++) {
+        const v = verts[i];
+        let x = v.x, y = v.y, z = v.z;
+        if (sp === "droplet") {
+          const wave = 1 + 0.075 * Math.sin(v.by * 5.0 + t * 3.2) * Math.cos(v.bx * 4.4 - t * 2.4);
+          x = v.bx * wave; y = v.by * wave; z = v.bz * wave;
+        }
+        const rx = x * cosY + z * sinY, rz1 = -x * sinY + z * cosY;
+        const ry = y * cosX - rz1 * sinX, rz = y * sinX + rz1 * cosX + zOff;
+        const p = camDist / (camDist - rz);
+        const out = proj[i];
+        out.sx = cx + rx * scale * p; out.sy = cy + ry * scale * p;
+        out.rx = rx; out.ry = ry; out.rz = rz; out.p = p;
+      }
+
+      let qLen = 0;
+
+      if (isTranslucent) {
+        for (let i = 0; i < engine.particles.length; i++) {
+          if (qLen >= MAX_QUEUE) break;
+          const pt = engine.particles[i];
+          const px = Math.sin(t * pt.sx + pt.ph) * pt.rx;
+          const py = Math.cos(t * pt.sy - pt.ph) * pt.ry;
+          const pz = Math.sin(t * pt.sz + pt.ph * 1.4) * pt.rz;
+          const rx = px * cosY + pz * sinY, rz1 = -px * sinY + pz * cosY;
+          const ry = py * cosX - rz1 * sinX, rz = py * sinX + rz1 * cosX + zOff;
+          const p = camDist / (camDist - rz);
+          const it = drawPool[qLen++];
+          it.type = 1; it.z = rz; it.x1 = cx + rx * scale * p; it.y1 = cy + ry * scale * p;
+          it.r = (pt.accent ? 13 : 9) * p; it.sprite = pt.accent ? SPRITES.eValence : SPRITES.eCore;
+        }
+        if (sp === "reactor" && qLen < MAX_QUEUE) {
+          const p0 = camDist / (camDist - zOff);
+          const it = drawPool[qLen++];
+          it.type = 1; it.z = zOff; it.x1 = cx; it.y1 = cy;
+          it.r = (32 + Math.sin(t * 5) * 3.5) * p0; it.sprite = SPRITES.nodeAccent;
+        }
+      }
+
+      for (let i = 0; i < engine.specFaces.length; i++) {
+        if (qLen >= MAX_QUEUE) break;
+        const f = engine.specFaces[i], idx = f.idx;
+        const p0 = proj[idx[0]], p1 = proj[idx[1]], p2 = proj[idx[2]];
+        const ux = p1.rx - p0.rx, uy = p1.ry - p0.ry, uz = p1.rz - p0.rz;
+        const vx = p2.rx - p0.rx, vy = p2.ry - p0.ry, vz = p2.rz - p0.rz;
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const nLen = Math.hypot(nx, ny, nz) || 1;
+        nx /= nLen; ny /= nLen; nz /= nLen;
+
+        let fcx = 0, fcy = 0, fcz = 0;
+        for (let k = 0; k < idx.length; k++) { fcx += proj[idx[k]].rx; fcy += proj[idx[k]].ry; fcz += proj[idx[k]].rz; }
+        const inv = 1 / idx.length;
+        fcx *= inv; fcy *= inv; fcz *= inv;
+
+        const facing = nx * (-fcx) + ny * (-fcy) + nz * (camDist - fcz);
+        if (!isTranslucent && facing <= 0) continue;
+
+        const diff = Math.max(0, nx * KEY_L.x + ny * KEY_L.y + nz * KEY_L.z);
+        const rimDir = Math.max(0, nx * RIM_L.x + ny * RIM_L.y + nz * RIM_L.z);
+        const spec = Math.pow(Math.max(0, nx * HALF_V.x + ny * HALF_V.y + nz * HALF_V.z), sp === "droplet" ? 36 : 22);
+        const fresnel = Math.pow(1 - Math.min(1, Math.abs(nz)), 2.2);
+
+        let fill, stroke, alpha = 1;
+        if (isTranslucent) {
+          const aDiff = Math.abs(nx * KEY_L.x + ny * KEY_L.y + nz * KEY_L.z);
+          fill = f.accent ? "#FF4500" : "#cfd2da";
+          stroke = f.accent ? "#FF4500" : "#808088";
+          alpha = 0.05 + aDiff * 0.11 + spec * 0.28;
+        } else if (f.accent) {
+          const r = Math.min(255, Math.round(62 + diff * 193 + spec * 145));
+          const g = Math.min(255, Math.round(14 + diff * 55 + spec * 155));
+          const b = Math.min(255, Math.round(4 + spec * 130));
+          fill = `rgb(${r},${g},${b})`;
+          stroke = "rgba(255, 165, 125, 0.45)";
+        } else {
+          const metal = Math.min(255, Math.round(16 + diff * 112 + spec * (sp === "droplet" ? 190 : 145)));
+          const orangeRim = (fresnel * 0.65 + rimDir * 0.55);
+          const rr = Math.min(255, Math.round(metal + orangeRim * 115));
+          const gg = Math.min(255, Math.round(metal + orangeRim * 30));
+          fill = `rgb(${rr},${gg},${metal})`;
+          stroke = sp === "droplet" ? fill : (orangeRim > 0.48 ? "rgba(255, 69, 0, 0.55)" : "rgba(255, 255, 255, 0.15)");
+        }
+
+        const it = drawPool[qLen++];
+        it.type = 2; it.z = fcz; it.pts = idx; it.fill = fill; it.stroke = stroke;
+        it.alpha = alpha; it.lw = isTranslucent ? 1.15 : 0.8;
+      }
+
+      activeQueue.length = qLen;
+      for (let i = 0; i < qLen; i++) activeQueue[i] = drawPool[i];
+      activeQueue.sort((a, b) => a.z - b.z);
+
+      for (let i = 0; i < qLen; i++) {
+        const it = activeQueue[i];
+        if (it.type === 1) {
+          ctx.globalAlpha = engine.masterAlpha;
+          const d = it.r;
+          ctx.drawImage(it.sprite, it.x1 - d * 0.5, it.y1 - d * 0.5, d, d);
+        } else if (it.type === 2) {
+          const idx = it.pts;
+          ctx.beginPath();
+          ctx.moveTo(proj[idx[0]].sx, proj[idx[0]].sy);
+          for (let k = 1; k < idx.length; k++) ctx.lineTo(proj[idx[k]].sx, proj[idx[k]].sy);
+          ctx.closePath();
+          ctx.fillStyle = it.fill;
+          ctx.globalAlpha = engine.masterAlpha * it.alpha;
+          ctx.fill();
+          ctx.strokeStyle = it.stroke;
+          ctx.globalAlpha = engine.masterAlpha * (isTranslucent ? 0.55 : 1);
+          ctx.lineWidth = it.lw;
+          ctx.stroke();
+        }
+      }
+    }
+
+    /* ===== 3D GESTURES ===== */
+    let lastTap3D = 0;
+
+    stage3d.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      e.stopPropagation();
+      stage3d.setPointerCapture(e.pointerId);
+      engine.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      engine.resettingCam = false;
+      if (engine.pointers.size === 1) {
+        engine.dragging = true;
+        engine.dragDist = 0;
+        engine.lastX = e.clientX; engine.lastY = e.clientY;
+        engine.velX = 0; engine.velY = 0;
+      } else if (engine.pointers.size === 2) {
+        const pts = [...engine.pointers.values()];
+        engine.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      }
+    });
+
+    stage3d.addEventListener("pointermove", (e) => {
+      if (!engine.pointers.has(e.pointerId)) return;
+      e.stopPropagation();
+      engine.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (engine.pointers.size === 2) {
+        const pts = [...engine.pointers.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (engine.lastPinchDist > 0) {
+          engine.targetZoom = Math.max(0.65, Math.min(2.15, engine.targetZoom * (dist / engine.lastPinchDist)));
+        }
+        engine.lastPinchDist = dist;
+        engine.dragDist = 999;
+        return;
+      }
+      if (engine.dragging) {
+        const dx = e.clientX - engine.lastX, dy = e.clientY - engine.lastY;
+        engine.lastX = e.clientX; engine.lastY = e.clientY;
+        engine.dragDist += Math.hypot(dx, dy);
+        engine.rotY += dx * 0.011;
+        engine.rotX += dy * 0.011;
+        engine.velY = dx * 0.19;
+        engine.velX = dy * 0.19;
+      }
+    });
+
+    function release3DPointer(e) {
+      const wasTap = e.type === "pointerup" && engine.pointers.size === 1 && engine.dragDist < 8 && !e.target.closest("button");
+      engine.pointers.delete(e.pointerId);
+      if (engine.pointers.size < 2) engine.lastPinchDist = 0;
+      if (engine.pointers.size === 0) {
+        engine.dragging = false;
+        if (wasTap) {
+          const now = performance.now();
+          if (now - lastTap3D < 280) {
+            engine.resettingCam = true;
+            engine.targetZoom = 1.0;
+          }
+          lastTap3D = now;
+        }
+      } else {
+        const rem = [...engine.pointers.values()][0];
+        engine.lastX = rem.x; engine.lastY = rem.y;
+      }
+    }
+
+    stage3d.addEventListener("pointerup", release3DPointer);
+    stage3d.addEventListener("pointercancel", release3DPointer);
+    stage3d.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      engine.targetZoom = Math.max(0.65, Math.min(2.15, engine.targetZoom * (e.deltaY < 0 ? 1.1 : 0.91)));
+    }, { passive: false });
+
+    for (const btn of modeBtns) {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (engine.mode === btn.dataset.mode) return;
+        engine.mode = btn.dataset.mode;
+        for (const b of modeBtns) b.classList.toggle("active", b === btn);
+        engine.transState = "in";
+        engine.morphScale = 0.72;
+        engine.morphVel = 5.0;
+        engine.velY += 1.9;
+        update3DHudText();
+      });
+    }
+
+    /* ===== UNCLIPPED FULLSCREEN PORTAL WITH TWO-WAY FLIP ===== */
+    let isExpanded = false, flipTimer = 0;
+    function setFullscreen(expand) {
+      if (isExpanded === expand) return;
+      isExpanded = expand;
+      clearTimeout(flipTimer);
+
+      if (expand) {
+        const from = stage3d.getBoundingClientRect();
+        fsPortal.classList.add("open");
+        fsPortal.appendChild(stage3d);
+        btnExpand.textContent = "✕";
+        btnExpand.classList.add("active");
+
+        const to = stage3d.getBoundingClientRect();
+        resizeCanvas();
+
+        if (to.width > 0 && to.height > 0) {
+          const dx = from.left - to.left, dy = from.top - to.top;
+          const sx = from.width / to.width, sy = from.height / to.height;
+          stage3d.style.transition = "none";
+          stage3d.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${sx}, ${sy})`;
+          stage3d.offsetWidth;
+          fsPortal.classList.add("backdrop");
+          stage3d.style.transition = "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)";
+          stage3d.style.transform = "translate3d(0, 0, 0) scale(1, 1)";
+          flipTimer = setTimeout(() => {
+            stage3d.style.transition = "";
+            stage3d.style.transform = "";
+          }, 320);
+        }
+      } else {
+        // Animate smoothly back into the slot while still inside top-level portal (zero clipping)
+        const from = stage3d.getBoundingClientRect();
+        const dest = stage3dSlot.getBoundingClientRect();
+        btnExpand.textContent = "⤢";
+        btnExpand.classList.remove("active");
+        fsPortal.classList.remove("backdrop");
+
+        const finishClose = () => {
+          stage3d.style.transition = "";
+          stage3d.style.transform = "";
+          stage3dSlot.appendChild(stage3d);
+          fsPortal.classList.remove("open");
+          resizeCanvas();
+        };
+
+        if (from.width > 0 && from.height > 0 && dest.width > 0 && dest.height > 0) {
+          const dx = dest.left - from.left, dy = dest.top - from.top;
+          const sx = dest.width / from.width, sy = dest.height / from.height;
+          stage3d.style.transition = "transform 280ms cubic-bezier(0.22, 1, 0.36, 1)";
+          stage3d.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${sx}, ${sy})`;
+          flipTimer = setTimeout(finishClose, 290);
+        } else {
+          finishClose();
+        }
+      }
+    }
+
+    btnExpand.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setFullscreen(!isExpanded);
+    });
+
+    portraitFrame.addEventListener("pointermove", (e) => {
+      const r = portraitFrame.getBoundingClientRect();
+      const nx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      const ny = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      portraitFrame.style.transform = `perspective(520px) rotateY(${(nx * 7).toFixed(2)}deg) rotateX(${(-ny * 7).toFixed(2)}deg)`;
+    });
+    portraitFrame.addEventListener("pointerleave", () => { portraitFrame.style.transform = ""; });
+
+    /* ===== SELECTION & 2-PHASE CHOREOGRAPHY ===== */
+    let swapTimer = 0;
+    const padNum = (n) => String(n).padStart(3, "0");
+
+    function clearGridHighlights() {
+      const prev = ptable.querySelectorAll(".near-active, .axis-match");
+      for (let i = 0; i < prev.length; i++) prev[i].classList.remove("near-active", "axis-match");
+    }
+
+    function applyGridHighlights(el) {
+      clearGridHighlights();
+      if (!el) return;
+      for (let c = 1; c <= 18; c++) {
+        const num = cellNumByCoord[el.row * 19 + c];
+        if (num && num !== el.num) cellMap.get(num).classList.add("axis-match");
+      }
+      if (el.row <= 7) {
+        for (let r = 1; r <= 7; r++) {
+          const num = cellNumByCoord[r * 19 + el.col];
+          if (num && num !== el.num) cellMap.get(num).classList.add("axis-match");
+        }
+      }
+      const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+      for (let i = 0; i < 4; i++) {
+        const nb = coordMap.get(`${el.row + dirs[i][0]}:${el.col + dirs[i][1]}`);
+        if (nb && !nb.classList.contains("active")) nb.classList.add("near-active");
+      }
+    }
+
+    function fillFields(el) {
+      fNum.textContent = padNum(el.num);
+      fSym.textContent = el.sym;
+      fRu.textContent = el.ru;
+      fEn.textContent = el.en;
+      fMass.textContent = `Ar: ${el.mass}`;
+      fCat.textContent = el.cat;
+      fCat.classList.toggle("active", activeCategory === el.cat);
+      fDesc.textContent = el.desc;
+      fFeat.textContent = el.feat;
+    }
+
+    function selectElement(num, scrubbing = false) {
       if (selectedNum === num) return;
+
+      const wasOpen = selectedNum !== null;
       if (selectedNum !== null) {
         const prev = cellMap.get(selectedNum);
         if (prev) prev.classList.remove("active");
       }
+
       selectedNum = num;
+
       if (num === null) {
-        updateInspectorViews(null);
+        clearTimeout(swapTimer);
+        clearGridHighlights();
+        if (isExpanded) setFullscreen(false);
+        detailView.classList.remove("is-visible");
+        detailView.classList.add("is-hidden");
+        portraitView.classList.remove("is-hidden");
+        portraitView.classList.add("is-visible");
+        hudMain.textContent = "ВЕДИ ПАЛЬЦЕМ ПО СЕТКЕ";
+        hudSub.textContent = "18 ГРУПП · 118 3D-МОДЕЛЕЙ";
+        resetBtn.classList.add("active");
+        stopLoop();
         return;
       }
+
       const el = ELEMENTS[num - 1];
       if (!el) return;
+
       const cell = cellMap.get(num);
       if (cell) cell.classList.add("active");
-      updateInspectorViews(el);
+      applyGridHighlights(el);
+
+      hudMain.textContent = `${el.num} · ${el.sym} · ${el.ru.toUpperCase()}`;
+      hudSub.textContent = `${el.cat.toUpperCase()} · Ar ${el.mass}`;
+      resetBtn.classList.remove("active");
+
+      if (!wasOpen) {
+        fillFields(el);
+        portraitView.classList.remove("is-visible");
+        portraitView.classList.add("is-hidden");
+        detailView.classList.remove("is-hidden");
+        detailView.classList.add("is-visible");
+        resizeCanvas();
+        buildElementGeometry(el);
+        engine.transState = "in";
+        engine.morphScale = 0.58; engine.morphVel = 5.8;
+        engine.zShift = -1.0; engine.masterAlpha = 0.1; engine.velY = 2.4;
+        startLoop();
+        return;
+      }
+
+      if (scrubbing) {
+        clearTimeout(swapTimer);
+        detailHead.classList.remove("phase-out", "phase-pre-in");
+        detailInfo.classList.remove("phase-out", "phase-pre-in");
+        fillFields(el);
+        buildElementGeometry(el);
+        engine.transState = "in";
+        engine.morphScale = 0.85; engine.morphVel = 3.8;
+        engine.zShift = -0.35; engine.masterAlpha = 1;
+        startLoop();
+        return;
+      }
+
+      clearTimeout(swapTimer);
+      engine.pendingEl = el;
+      if (engine.transState !== "out") {
+        engine.transState = "out";
+        engine.transT = 0;
+      }
+      startLoop();
+
+      detailHead.classList.remove("phase-pre-in");
+      detailInfo.classList.remove("phase-pre-in");
+      detailHead.classList.add("phase-out");
+      detailInfo.classList.add("phase-out");
+
+      const delay = Math.max(16, Math.round((1 - engine.transT) * 130));
+      swapTimer = setTimeout(() => {
+        fillFields(el);
+        detailHead.classList.remove("phase-out");
+        detailInfo.classList.remove("phase-out");
+        detailHead.classList.add("phase-pre-in");
+        detailInfo.classList.add("phase-pre-in");
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            detailHead.classList.remove("phase-pre-in");
+            detailInfo.classList.remove("phase-pre-in");
+          });
+        });
+      }, delay);
     }
 
+    /* ===== SEARCH & FILTER ===== */
     function applyFilter() {
       const q = searchInput.value.trim().toLowerCase();
       clearSearch.classList.toggle("visible", q.length > 0);
-
-      let matches = [];
+      const matches = [];
       for (const el of ELEMENTS) {
         const cell = cellMap.get(el.num);
-        const matchSearch = !q ||
+        const mSearch = !q ||
           String(el.num) === q ||
           el.sym.toLowerCase().includes(q) ||
           el.ru.toLowerCase().includes(q) ||
           el.en.toLowerCase().includes(q);
-        const matchCat = !activeCategory || el.cat === activeCategory;
-
-        cell.classList.toggle("dimmed", !(matchSearch && matchCat));
+        const mCat = !activeCategory || el.cat === activeCategory;
+        cell.classList.toggle("dimmed", !(mSearch && mCat));
         cell.classList.toggle("cat-match", Boolean(activeCategory && el.cat === activeCategory));
-
-        if (matchSearch && matchCat) matches.push(el);
+        if (mSearch && mCat) matches.push(el);
       }
-
       if (q) {
-        const exact = matches.find(
-          e => String(e.num) === q || e.sym.toLowerCase() === q || e.ru.toLowerCase() === q
-        );
-        if (exact) selectElement(exact.num);
-        else if (matches.length === 1) selectElement(matches[0].num);
+        const exact = matches.find(e => String(e.num) === q || e.sym.toLowerCase() === q || e.ru.toLowerCase() === q);
+        if (exact) selectElement(exact.num, false);
+        else if (matches.length === 1) selectElement(matches[0].num, false);
       }
     }
 
-    // Pointer click & smooth finger scrubbing across the grid
-    function hitCellAt(clientX, clientY) {
-      const target = document.elementFromPoint(clientX, clientY);
-      if (!target) return null;
-      const cell = target.closest(".cell");
-      return cell ? Number(cell.dataset.num) : null;
-    }
-
+    /* ===== GRID EVENTS ===== */
     gridStage.addEventListener("pointerdown", (e) => {
-      const num = hitCellAt(e.clientX, e.clientY);
+      if (e.target.closest("#desktopCenter")) return;
+      cacheGridMetrics();
+      const num = fastHitCell(e.clientX, e.clientY);
       if (num !== null) {
         isScrubbing = true;
-        selectElement(num);
+        selectElement(num, false);
       }
     });
 
     gridStage.addEventListener("pointermove", (e) => {
       if (!isScrubbing) return;
-      const num = hitCellAt(e.clientX, e.clientY);
-      if (num !== null) {
-        selectElement(num);
-      }
+      const num = fastHitCell(e.clientX, e.clientY);
+      if (num !== null && num !== selectedNum) selectElement(num, true);
     });
 
     window.addEventListener("pointerup", () => { isScrubbing = false; });
     window.addEventListener("pointercancel", () => { isScrubbing = false; });
+    window.addEventListener("resize", () => { gridMetrics = null; resizeCanvas(); });
 
-    // Inspector buttons (prev / next / close / category highlight)
-    for (const root of inspectors) {
-      root.addEventListener("click", (e) => {
-        const actionBtn = e.target.closest("[data-action]");
-        if (actionBtn) {
-          const act = actionBtn.dataset.action;
-          if (act === "close") {
-            activeCategory = null;
-            selectElement(null);
-            applyFilter();
-          } else if (act === "prev" && selectedNum !== null) {
-            selectElement(selectedNum > 1 ? selectedNum - 1 : 118);
-          } else if (act === "next" && selectedNum !== null) {
-            selectElement(selectedNum < 118 ? selectedNum + 1 : 1);
-          }
-          return;
-        }
-        const catBtn = e.target.closest('[data-field="cat"]');
-        if (catBtn && selectedNum !== null) {
-          const cat = ELEMENTS[selectedNum - 1].cat;
-          activeCategory = activeCategory === cat ? null : cat;
-          applyFilter();
-          updateInspectorViews(ELEMENTS[selectedNum - 1]);
-        }
-      });
-    }
+    /* ===== CONTROLS ===== */
+    btnClose.addEventListener("click", () => { activeCategory = null; selectElement(null); applyFilter(); });
+    btnPrev.addEventListener("click", () => { if (selectedNum !== null) selectElement(selectedNum > 1 ? selectedNum - 1 : 118, false); });
+    btnNext.addEventListener("click", () => { if (selectedNum !== null) selectElement(selectedNum < 118 ? selectedNum + 1 : 1, false); });
+
+    fCat.addEventListener("click", () => {
+      if (selectedNum === null) return;
+      const cat = ELEMENTS[selectedNum - 1].cat;
+      activeCategory = activeCategory === cat ? null : cat;
+      applyFilter();
+      fCat.classList.toggle("active", activeCategory === cat);
+    });
 
     searchInput.addEventListener("input", applyFilter);
-    clearSearch.addEventListener("click", () => {
-      searchInput.value = "";
-      activeCategory = null;
-      applyFilter();
-      searchInput.focus();
-    });
+    clearSearch.addEventListener("click", () => { searchInput.value = ""; activeCategory = null; applyFilter(); searchInput.focus(); });
+    resetBtn.addEventListener("click", () => { searchInput.value = ""; activeCategory = null; selectElement(null); applyFilter(); });
 
-    resetBtn.addEventListener("click", () => {
-      searchInput.value = "";
-      activeCategory = null;
-      selectElement(null);
-      applyFilter();
-    });
-
-    // Keyboard navigation on PC
     window.addEventListener("keydown", (e) => {
       if (document.activeElement === searchInput) {
         if (e.key === "Escape") searchInput.blur();
         return;
       }
       if (e.key === "Escape") {
-        activeCategory = null;
-        selectElement(null);
-        applyFilter();
+        if (isExpanded) { setFullscreen(false); return; }
+        activeCategory = null; selectElement(null); applyFilter();
       } else if (e.key === "ArrowRight") {
-        selectElement(selectedNum === null ? 1 : (selectedNum < 118 ? selectedNum + 1 : 1));
+        selectElement(selectedNum === null ? 1 : (selectedNum < 118 ? selectedNum + 1 : 1), false);
       } else if (e.key === "ArrowLeft") {
-        selectElement(selectedNum === null ? 118 : (selectedNum > 1 ? selectedNum - 1 : 118));
+        selectElement(selectedNum === null ? 118 : (selectedNum > 1 ? selectedNum - 1 : 118), false);
       }
     });
 
-    updateInspectorViews(null);
+    mqDesktop.addEventListener("change", syncInspectorHost);
+    syncInspectorHost();
   </script>
 </body>
 </html>
