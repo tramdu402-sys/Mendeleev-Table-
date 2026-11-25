@@ -2,24 +2,25 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Таблица Менделеева</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>МЕНДЕЛЕЕВ // 118</title>
   <style>
     :root {
       --bg: #000000;
-      --surface: #0a0a0b;
-      --surface-hover: #14110f;
-      --border: rgba(255, 159, 67, 0.22);
-      --border-strong: rgba(255, 159, 67, 0.65);
-      --accent: #ff9f43;
-      --accent-soft: #ffb974;
-      --accent-glow: rgba(255, 159, 67, 0.16);
-      --text: #f5f5f7;
-      --muted: #8e8e93;
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --surface: #070707;
+      --surface-2: #0f0f0f;
+      --line: #222222;
+      --line-strong: #383838;
+      --accent: #FF4500;
+      --accent-dim: #7a2200;
+      --text: #F2F2F2;
+      --muted: #7A7A7A;
+      --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -27,609 +28,1394 @@
     }
 
     html, body {
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
+      font-family: var(--sans);
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    #app-wrap {
-      max-width: 1480px;
-      margin: 0 auto;
-      padding: 20px 16px 48px;
-      transition: padding-bottom 0.42s var(--ease);
-    }
-
-    #app-wrap.has-panel {
-      padding-bottom: 330px;
-    }
-
-    /* Шапка с силуэтом Менделеева */
-    .hero {
+    .app {
+      width: 100%;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      margin-bottom: 22px;
-      gap: 8px;
-      animation: fadeDown 0.55s var(--ease) both;
+      background: var(--bg);
+      overflow: hidden;
     }
 
-    .mendeleev-wrap {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 50% 45%, rgba(255, 159, 67, 0.18), rgba(0, 0, 0, 0) 72%);
+    /* ===== TOP BAR ===== */
+    .topbar {
+      flex: 0 0 40px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(255, 159, 67, 0.25);
-      box-shadow: 0 0 28px rgba(255, 159, 67, 0.12);
-      transition: transform 0.35s var(--ease);
-      will-change: transform;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
     }
 
-    .mendeleev-wrap:hover {
-      transform: scale(1.05);
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      white-space: nowrap;
+      font-family: var(--mono);
+      letter-spacing: 0.08em;
     }
 
-    .mendeleev-svg {
-      width: 82px;
-      height: 82px;
-      display: block;
-    }
-
-    .hero h1 {
-      font-size: clamp(20px, 3vw, 30px);
+    .brand-title {
+      font-size: 12px;
       font-weight: 700;
-      letter-spacing: -0.02em;
       color: var(--text);
     }
 
-    .hero h1 span {
+    .brand-tag {
+      font-size: 10px;
       color: var(--accent);
+      font-weight: 700;
     }
 
-    .hero-sub {
-      font-size: 13px;
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      max-width: 280px;
+      justify-content: flex-end;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .search {
+      width: 100%;
+      height: 26px;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 0 24px 0 8px;
+      outline: none;
+      border-radius: 0;
+      appearance: none;
+    }
+
+    .search::placeholder {
       color: var(--muted);
     }
 
-    /* Статус загрузки / проверки */
-    #status-bar {
-      max-width: 520px;
-      margin: 28px auto;
-      padding: 14px 18px;
-      border-radius: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      text-align: center;
-      font-size: 14px;
-      color: var(--accent-soft);
-      transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+    .search:focus {
+      border-color: var(--accent);
     }
 
-    #status-bar.hidden {
+    .btn-clear {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 24px;
+      height: 26px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-clear.visible {
+      display: flex;
+    }
+
+    .btn-clear:hover {
+      color: var(--accent);
+    }
+
+    .btn-icon {
+      height: 26px;
+      padding: 0 8px;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon:hover, .btn-icon.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ===== MAIN WORKSPACE ===== */
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== PERIODIC GRID ===== */
+    .grid-stage {
+      position: relative;
+      flex: 0 0 40dvh;
+      min-height: 205px;
+      max-height: 360px;
+      padding: 6px 4px;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    .ptable {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(18, minmax(0, 1fr));
+      grid-template-rows: repeat(7, minmax(0, 1fr)) 5px repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--bg);
+    }
+
+    .cell {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+      transition: background-color 0.08s linear, border-color 0.08s linear;
+    }
+
+    /* Subtle category structural markers (strict monochrome + orange) */
+    .cell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: transparent;
+    }
+
+    .cell[data-cat="Щелочной металл"]::before { background: var(--accent); opacity: 0.9; }
+    .cell[data-cat="Щёлочноземельный металл"]::before { background: var(--accent); opacity: 0.55; }
+    .cell[data-cat="Галоген"]::before { background: #ffffff; opacity: 0.7; }
+    .cell[data-cat="Благородный газ"] { background: #0c0c0c; border-color: #2c2c2c; }
+    .cell[data-cat="Неметалл"]::before { background: #a8a8a8; opacity: 0.5; }
+    .cell[data-cat="Полуметалл"]::before { background: #666666; opacity: 0.7; }
+    .cell[data-cat="Лантаноид"], .cell[data-cat="Актиноид"] { background: #050505; border-color: #1c1c1c; }
+
+    .cell-num {
+      display: none;
+      font-family: var(--mono);
+      font-size: 9px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .cell-sym {
+      font-family: var(--sans);
+      font-size: clamp(8px, 2.35vw, 11px);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--text);
+    }
+
+    .cell-ru {
+      display: none;
+      font-size: 8px;
+      line-height: 1.05;
+      color: #a0a0a0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .cell-mass {
+      display: none;
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--muted);
+    }
+
+    .cell:hover {
+      border-color: var(--accent);
+      background: #140802;
+      z-index: 2;
+    }
+
+    .cell.cat-match {
+      border-color: var(--accent);
+      background: #1a0900;
+    }
+
+    .cell.dimmed {
+      opacity: 0.2;
+    }
+
+    .cell.active {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
+      z-index: 4;
+      opacity: 1 !important;
+    }
+
+    .cell.active .cell-sym,
+    .cell.active .cell-num,
+    .cell.active .cell-ru,
+    .cell.active .cell-mass {
+      color: #000000 !important;
+    }
+
+    .cell-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #262626;
+      background: #030303;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: clamp(6px, 1.5vw, 9px);
+      letter-spacing: -0.04em;
+      pointer-events: none;
+    }
+
+    /* Mobile scrub HUD inside grid empty space */
+    .scrub-hud {
+      grid-column: 3 / 13;
+      grid-row: 1 / 4;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 4px 8px;
+      border: 1px solid #161616;
+      background: #030303;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .scrub-kicker {
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .scrub-main {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      margin-top: 2px;
+    }
+
+    .scrub-sub {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    /* Desktop embedded inspector is hidden inside grid on mobile */
+    .desktop-center {
       display: none;
     }
 
-    #status-bar.error {
-      border-color: #ff5e57;
-      color: #ff8a80;
-    }
-
-    /* Контейнер таблицы */
-    .table-scroll {
-      width: 100%;
-      overflow-x: auto;
-      padding: 8px 4px 16px;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255, 159, 67, 0.35) #000000;
-    }
-
-    .table-scroll::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    .table-scroll::-webkit-scrollbar-track {
-      background: #000000;
-    }
-
-    .table-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255, 159, 67, 0.35);
-      border-radius: 999px;
-    }
-
-    #table-grid {
-      display: grid;
-      grid-template-columns: repeat(18, minmax(66px, 1fr));
-      grid-auto-rows: 78px;
-      gap: 6px;
-      min-width: 1280px;
-    }
-
-    /* Ячейка элемента */
-    .el-cell {
-      position: relative;
+    /* ===== BOTTOM INSPECTOR (MOBILE DEFAULT) ===== */
+    .inspector {
+      flex: 1;
+      min-height: 0;
+      border-top: 1px solid var(--accent);
+      background: var(--bg);
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      padding: 5px 6px 5px;
-      border-radius: 11px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      cursor: pointer;
-      text-align: left;
-      user-select: none;
-      outline: none;
-      will-change: transform, opacity;
-      transition:
-        transform 0.22s var(--ease),
-        border-color 0.22s var(--ease),
-        background-color 0.22s var(--ease),
-        box-shadow 0.22s var(--ease);
-      animation: cellIn 0.45s var(--ease) both;
-    }
-
-    .el-cell:hover {
-      transform: translate3d(0, -3px, 0) scale(1.045);
-      background: var(--surface-hover);
-      border-color: var(--accent);
-      box-shadow: 0 8px 20px rgba(255, 159, 67, 0.18);
-      z-index: 4;
-    }
-
-    .el-cell:active {
-      transform: translate3d(0, 0, 0) scale(0.97);
-    }
-
-    .el-cell.active {
-      background: rgba(255, 159, 67, 0.14);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(255, 159, 67, 0.25);
-      transform: translate3d(0, -2px, 0) scale(1.03);
-      z-index: 5;
-    }
-
-    .el-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 2px;
-      line-height: 1;
-    }
-
-    .el-num {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .el-mass {
-      font-size: 8.5px;
-      color: var(--muted);
-      letter-spacing: -0.02em;
-    }
-
-    .el-sym {
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.05;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .el-names {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.1;
       overflow: hidden;
+      padding: 10px 12px;
     }
 
-    .el-ru {
-      font-size: 9px;
-      font-weight: 500;
-      color: #e5e5ea;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .el-en {
-      font-size: 7.5px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 1px;
-    }
-
-    .series-label {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 8px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--accent-soft);
-      opacity: 0.78;
-      user-select: none;
-    }
-
-    .series-marker {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 11px;
-      border: 1px dashed rgba(255, 159, 67, 0.25);
-      background: rgba(255, 159, 67, 0.03);
-      color: var(--accent-soft);
-      font-size: 10px;
-      font-weight: 600;
-      user-select: none;
-    }
-
-    /* Нижняя выезжающая карточка (ПК и телефон) */
-    #detail-panel {
-      position: fixed;
-      left: 50%;
-      bottom: 0;
-      width: min(920px, calc(100% - 20px));
-      background: rgba(10, 10, 11, 0.96);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid var(--border-strong);
-      border-bottom: none;
-      border-radius: 22px 22px 0 0;
-      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.9), 0 -2px 24px rgba(255, 159, 67, 0.14);
-      padding: 20px 22px 22px;
-      z-index: 50;
-      transform: translate3d(-50%, 110%, 0);
-      opacity: 0;
-      pointer-events: none;
-      will-change: transform, opacity;
-      transition: transform 0.38s var(--ease), opacity 0.28s var(--ease);
-    }
-
-    #detail-panel.open {
-      transform: translate3d(-50%, 0, 0);
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .panel-handle {
-      width: 42px;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(255, 159, 67, 0.35);
-      margin: -6px auto 14px;
-    }
-
-    #detail-close {
-      position: absolute;
-      top: 14px;
-      right: 16px;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: #121214;
-      color: var(--accent-soft);
-      font-size: 17px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.22s var(--ease), background-color 0.22s var(--ease), border-color 0.22s var(--ease);
-      will-change: transform;
-    }
-
-    #detail-close:hover {
-      transform: scale(1.08);
-      background: rgba(255, 159, 67, 0.16);
-      border-color: var(--accent);
-    }
-
-    .panel-body {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .panel-body.switching {
-      animation: contentPop 0.28s var(--ease) both;
-    }
-
-    .silhouette-box {
-      width: 120px;
-      height: 120px;
-      border-radius: 18px;
-      background: radial-gradient(circle at 50% 50%, rgba(255, 159, 67, 0.15), #050505 76%);
-      border: 1px solid rgba(255, 159, 67, 0.28);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 14px;
-      flex-shrink: 0;
-    }
-
-    #detail-silhouette svg {
+    /* Portrait view (idle state) */
+    .portrait-view {
       width: 100%;
       height: 100%;
-      display: block;
-      filter: drop-shadow(0 0 10px rgba(255, 159, 67, 0.28));
+      display: grid;
+      grid-template-columns: minmax(120px, 46%) 1fr;
+      gap: 12px;
+      align-items: center;
+      overflow: hidden;
     }
 
-    .detail-info {
+    .portrait-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-height: 100%;
+      border: 1px solid var(--line-strong);
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 4px;
+    }
+
+    .portrait-frame::before,
+    .portrait-frame::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-color: var(--accent);
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .portrait-frame::before {
+      top: -1px;
+      left: -1px;
+      border-width: 2px 0 0 2px;
+    }
+
+    .portrait-frame::after {
+      bottom: -1px;
+      right: -1px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .portrait-svg {
+      width: 100%;
+      height: 100%;
+      max-width: 220px;
+      max-height: 100%;
+      display: block;
+    }
+
+    .portrait-meta {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding-right: 32px;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .meta-index {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.14em;
+    }
+
+    .meta-name {
+      font-size: clamp(16px, 4.8vw, 24px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+    }
+
+    .meta-years {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      border-left: 2px solid var(--accent);
+      padding-left: 8px;
+    }
+
+    .meta-hint {
+      font-size: 12px;
+      line-height: 1.35;
+      color: #bdbdbd;
+    }
+
+    .meta-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .stat-box {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 5px 6px;
+    }
+
+    .stat-val {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stat-lbl {
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* Element detail view */
+    .detail-view {
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .detail-view.visible {
+      display: flex;
+    }
+
+    .portrait-view.hidden {
+      display: none;
     }
 
     .detail-head {
       display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
+      align-items: stretch;
       gap: 10px;
+      flex: 0 0 auto;
     }
 
-    #detail-symbol {
-      font-size: 32px;
+    .detail-badge {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      background: var(--accent);
+      color: #000000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px 6px;
+    }
+
+    .detail-num {
+      font-family: var(--mono);
+      font-size: 11px;
       font-weight: 800;
-      color: var(--accent);
       line-height: 1;
     }
 
-    #detail-name-ru {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
+    .detail-sym {
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
     }
 
-    #detail-name-en {
-      font-size: 14px;
+    .detail-titles {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .detail-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .detail-ru {
+      font-size: clamp(18px, 5vw, 24px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .detail-en {
+      font-family: var(--mono);
+      font-size: 11px;
       color: var(--muted);
     }
 
-    .detail-badges {
+    .detail-tags {
       display: flex;
+      align-items: center;
+      gap: 6px;
       flex-wrap: wrap;
-      gap: 8px;
     }
 
-    .badge {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(255, 159, 67, 0.11);
-      border: 1px solid rgba(255, 159, 67, 0.26);
-      color: var(--accent-soft);
+    .tag-pill {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border: 1px solid var(--line-strong);
+      background: var(--surface);
+      color: var(--text);
+      white-space: nowrap;
     }
 
-    .detail-cards {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .info-card {
-      background: #050506;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-
-    .info-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .tag-cat {
+      cursor: pointer;
+      border-color: var(--accent-dim);
       color: var(--accent);
-      margin-bottom: 4px;
+    }
+
+    .tag-cat.active {
+      background: var(--accent);
+      color: #000000;
+      border-color: var(--accent);
       font-weight: 700;
     }
 
-    .info-text {
-      font-size: 13.5px;
-      line-height: 1.45;
-      color: #e5e5ea;
+    .detail-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 0 0 auto;
     }
 
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translate3d(0, -10px, 0); }
-      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    .nav-row {
+      display: flex;
+      gap: 4px;
     }
 
-    @keyframes cellIn {
-      from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.96); }
-      to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    .nav-btn {
+      width: 28px;
+      height: 27px;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    @keyframes contentPop {
-      from { opacity: 0; transform: translate3d(0, 8px, 0); }
-      to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    .nav-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
-    @media (max-width: 720px) {
-      #app-wrap {
-        padding: 14px 10px 40px;
+    .nav-btn-close {
+      width: 100%;
+      height: 27px;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+    }
+
+    .detail-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .info-block {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .info-block.fact {
+      border-left: 2px solid var(--accent);
+    }
+
+    .info-lbl {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .info-txt {
+      font-size: clamp(11.5px, 3.2vw, 13.5px);
+      line-height: 1.35;
+      color: #e4e4e4;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    /* ===== DESKTOP LAYOUT (ZERO SCROLL, INSPECTOR EMBEDDED IN CENTER GAP) ===== */
+    @media (min-width: 900px) and (min-height: 540px) {
+      .topbar {
+        flex: 0 0 42px;
+        padding: 0 16px;
       }
 
-      #app-wrap.has-panel {
-        padding-bottom: 410px;
+      .brand-title {
+        font-size: 13px;
       }
 
-      #detail-panel {
+      .grid-stage {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+        padding: 10px 14px 12px;
+      }
+
+      .ptable {
+        gap: 3px;
+        grid-template-rows: repeat(7, minmax(0, 1fr)) 10px repeat(2, minmax(0, 1fr));
+      }
+
+      .cell {
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 4px 5px;
+      }
+
+      .cell-top {
         width: 100%;
-        border-radius: 20px 20px 0 0;
-        padding: 16px 14px 18px;
-        max-height: 62vh;
-        overflow-y: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 2px;
       }
 
-      .panel-body {
-        grid-template-columns: 82px 1fr;
-        gap: 12px;
-        align-items: start;
+      .cell-num {
+        display: block;
+        font-size: clamp(8px, 0.72vw, 11px);
       }
 
-      .silhouette-box {
-        width: 82px;
-        height: 82px;
-        padding: 10px;
-        border-radius: 14px;
+      .cell-mass {
+        display: block;
+        font-size: clamp(7px, 0.58vw, 9px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .detail-info {
-        padding-right: 26px;
-        gap: 8px;
+      .cell-sym {
+        font-size: clamp(13px, 1.35vw, 22px);
+        letter-spacing: -0.02em;
       }
 
-      #detail-symbol { font-size: 24px; }
-      #detail-name-ru { font-size: 18px; }
+      .cell-ru {
+        display: block;
+        font-size: clamp(7px, 0.62vw, 10px);
+      }
 
-      .detail-cards {
-        grid-template-columns: 1fr;
+      .scrub-hud {
+        display: none;
+      }
+
+      .inspector {
+        display: none;
+      }
+
+      .desktop-center {
+        grid-column: 3 / 13;
+        grid-row: 1 / 4;
+        display: flex;
+        border: 1px solid var(--line-strong);
+        border-left: 2px solid var(--accent);
+        background: #040404;
+        padding: 10px 14px;
+        overflow: hidden;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .desktop-center .portrait-view {
+        grid-template-columns: 160px 1fr;
+        gap: 16px;
+      }
+
+      .desktop-center .portrait-frame {
+        border-color: var(--line);
+      }
+
+      .desktop-center .meta-name {
+        font-size: clamp(18px, 1.8vw, 26px);
+      }
+
+      .desktop-center .meta-hint {
+        font-size: 12px;
+      }
+
+      .desktop-center .meta-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-width: 340px;
+      }
+
+      .desktop-center .detail-grid {
+        grid-template-rows: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .desktop-center .detail-badge {
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+      }
+
+      .desktop-center .detail-sym {
+        font-size: 24px;
+      }
+
+      .desktop-center .detail-ru {
+        font-size: clamp(16px, 1.5vw, 22px);
+      }
+
+      .desktop-center .info-txt {
+        font-size: clamp(11px, 0.92vw, 13px);
+        line-height: 1.32;
       }
     }
   </style>
 </head>
 <body>
-  <div id="app-wrap">
-    <header class="hero">
-      <div class="mendeleev-wrap" title="Д. И. Менделеев">
-        <!-- Узнаваемый портретный силуэт Д. И. Менделеева (по классическому портрету Крамского/Репина) -->
-        <svg class="mendeleev-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="Силуэт Д. И. Менделеева">
-          <!-- Основной силуэт: пышная шевелюра, борода и плечи -->
-          <path fill="#ff9f43" d="
-            M60 9
-            C46 9 35 16 29 27
-            C22 36 18 48 21 60
-            C23 68 29 73 34 75
-            C34 84 37 92 41 97
-            C28 100 18 106 13 116
-            L107 116
-            C102 106 92 100 79 97
-            C83 92 86 84 86 75
-            C91 73 97 68 99 60
-            C102 48 98 36 91 27
-            C85 16 74 9 60 9 Z
-          "/>
-          <!-- Просвет высокого лба и лица -->
-          <path fill="#000000" d="
-            M60 22
-            C49 22 42 28 41 39
-            C40 44 41 48 43 52
-            C46 53 50 53 54 54
-            C56 51 57 46 58 42
-            L62 42
-            C63 46 64 51 66 54
-            C70 53 74 53 77 52
-            C79 48 80 44 79 39
-            C78 28 71 22 60 22 Z
-          "/>
-          <!-- Выразительные брови и глубоко посаженные глаза -->
-          <path fill="#ff9f43" d="
-            M43 38 C47 35 53 35 57 38 C54 40 47 40 43 38 Z
-            M63 38 C67 35 73 35 77 38 C73 40 66 40 63 38 Z
-          "/>
-          <ellipse cx="50" cy="42.5" rx="2.6" ry="1.8" fill="#ff9f43"/>
-          <ellipse cx="70" cy="42.5" rx="2.6" ry="1.8" fill="#ff9f43"/>
-          <!-- Линия переносицы -->
-          <path fill="#ff9f43" d="M58.5 39 L61.5 39 L62.5 52 L57.5 52 Z"/>
-          <!-- Разделение пышных усов и длинной бороды -->
-          <path fill="none" stroke="#000000" stroke-width="2.1" stroke-linecap="round" d="
-            M43 62 C50 66 56 64 60 63 C64 64 70 66 77 62
-          "/>
-          <!-- Контур длинной струящейся бороды -->
-          <path fill="none" stroke="#000000" stroke-width="1.8" stroke-linecap="round" d="
-            M42 74 C44 89 51 101 60 106 C69 101 76 89 78 74
-            M51 73 C52 86 55 96 58 102
-            M69 73 C68 86 65 96 62 102
-          "/>
-          <!-- Пряди волос по бокам и воротник сюртука -->
-          <path fill="none" stroke="#000000" stroke-width="1.7" stroke-linecap="round" d="
-            M31 36 C26 45 26 56 31 64
-            M89 36 C94 45 94 56 89 64
-            M41 98 L53 116
-            M79 98 L67 116
-          "/>
-        </svg>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-title">МЕНДЕЛЕЕВ</span>
+        <span class="brand-tag">// 118</span>
       </div>
-      <h1>Периодическая таблица <span>Менделеева</span></h1>
-      <p class="hero-sub">Нажми на любой элемент, чтобы открыть описание, свойства и силуэт</p>
+      <div class="controls">
+        <div class="search-wrap">
+          <input id="searchInput" class="search" type="text" placeholder="Поиск: Au, Золото, 79" autocomplete="off" spellcheck="false" />
+          <button id="clearSearch" class="btn-clear" type="button" aria-label="Очистить">✕</button>
+        </div>
+        <button id="resetBtn" class="btn-icon" type="button">ПОРТРЕТ</button>
+      </div>
     </header>
 
-    <div id="status-bar">Подключаю модуль Rust (WebAssembly)...</div>
+    <main class="workspace">
+      <section class="grid-stage" id="gridStage">
+        <div class="ptable" id="ptable">
+          <div class="scrub-hud" id="scrubHud">
+            <span class="scrub-kicker">ПЕРИОДИЧЕСКАЯ СИСТЕМА</span>
+            <span class="scrub-main" id="hudMain">ВЕДИ ПАЛЬЦЕМ ПО СЕТКЕ</span>
+            <span class="scrub-sub" id="hudSub">18 ГРУПП · 7 ПЕРИОДОВ</span>
+          </div>
 
-    <div class="table-scroll">
-      <div id="table-grid" aria-label="Таблица Менделеева"></div>
-    </div>
+          <div class="desktop-center" id="desktopCenter"></div>
+        </div>
+      </section>
+
+      <section class="inspector" id="mobileInspector"></section>
+    </main>
   </div>
 
-  <!-- Выезжающая снизу карточка элемента -->
-  <aside id="detail-panel" aria-hidden="true">
-    <div class="panel-handle"></div>
-    <button id="detail-close" type="button" aria-label="Закрыть">✕</button>
-    <div id="panel-body" class="panel-body">
-      <div class="silhouette-box">
-        <div id="detail-silhouette"></div>
+  <!-- Template for inspector (mounted either in desktopCenter or mobileInspector) -->
+  <template id="inspectorTpl">
+    <div class="portrait-view" data-role="portraitView">
+      <div class="portrait-frame">
+        <!-- Multi-line architectural orange engraving of D. I. Mendeleev -->
+        <svg class="portrait-svg" viewBox="0 0 260 280" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Д. И. Менделеев">
+          <!-- Subtle technical grid ticks -->
+          <g stroke="#FF4500" stroke-width="0.5" opacity="0.22">
+            <line x1="8" y1="14" x2="252" y2="14" stroke-dasharray="2 6"/>
+            <line x1="8" y1="268" x2="252" y2="268" stroke-dasharray="2 6"/>
+            <line x1="130" y1="4" x2="130" y2="20"/>
+            <line x1="12" y1="108" x2="22" y2="108"/>
+            <line x1="238" y1="108" x2="248" y2="108"/>
+          </g>
+
+          <!-- Coat / Shoulders outer silhouette & structural folds -->
+          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 274 C12 222 18 194 42 180 C62 169 80 165 92 162" stroke-width="1.5" opacity="0.85"/>
+            <path d="M250 274 C248 220 242 192 218 180 C198 169 180 165 168 162" stroke-width="1.5" opacity="0.85"/>
+            <!-- Left lapel & jacket collar -->
+            <path d="M74 166 L60 194 L78 206 L68 214 L106 274" stroke-width="1.4" opacity="0.9"/>
+            <path d="M84 176 L116 266" stroke-width="1.1" opacity="0.65"/>
+            <!-- Right lapel -->
+            <path d="M186 166 L202 194 L182 208 L192 216 L154 274" stroke-width="1.4" opacity="0.9"/>
+            <path d="M176 176 L144 266" stroke-width="1.1" opacity="0.65"/>
+            <!-- White shirt V-neck & waistcoat -->
+            <path d="M116 206 L132 252 L148 212" stroke-width="1.1" opacity="0.75"/>
+            <path d="M126 206 L136 244" stroke-width="0.7" opacity="0.5"/>
+            <circle cx="131" cy="222" r="1.4" stroke-width="0.9" opacity="0.7"/>
+            <circle cx="148" cy="256" r="2.2" stroke-width="1" opacity="0.8"/>
+            <!-- Coat wool hatching -->
+            <path d="M24 206 L58 272 M36 196 L74 272 M18 228 L42 272 M48 186 L90 272" stroke-width="0.6" opacity="0.28"/>
+            <path d="M236 206 L202 272 M224 196 L186 272 M242 228 L218 272 M212 186 L170 272" stroke-width="0.6" opacity="0.28"/>
+            <path d="M14 252 L28 274 M246 252 L232 274" stroke-width="0.6" opacity="0.25"/>
+          </g>
+
+          <!-- Flowing long hair (left & right swept strands) -->
+          <g stroke="#FF4500" stroke-linecap="round">
+            <!-- Crown & top hair sweep -->
+            <path d="M84 44 C94 20 124 14 152 22 C172 28 184 44 188 66" stroke-width="1.4" opacity="0.9"/>
+            <path d="M92 34 C114 20 144 20 166 32" stroke-width="1.1" opacity="0.7"/>
+            <path d="M102 26 C126 16 154 22 174 40" stroke-width="0.9" opacity="0.55"/>
+            <path d="M112 22 C134 19 156 28 172 48" stroke-width="0.7" opacity="0.4"/>
+            <!-- Left side wild wavy hair -->
+            <path d="M88 38 C70 52 58 84 44 114 C36 130 28 140 24 152" stroke-width="1.3" opacity="0.85"/>
+            <path d="M82 48 C66 66 56 96 42 126 C34 142 30 150 32 162" stroke-width="1.1" opacity="0.72"/>
+            <path d="M86 58 C72 80 62 108 50 138 C44 152 44 162 48 168" stroke-width="1.0" opacity="0.62"/>
+            <path d="M90 70 C78 92 70 116 60 144 C56 156 58 164 62 168" stroke-width="0.9" opacity="0.5"/>
+            <path d="M74 62 C58 82 44 106 32 132" stroke-width="0.8" opacity="0.45"/>
+            <path d="M68 86 C52 106 38 124 22 140" stroke-width="0.7" opacity="0.35"/>
+            <path d="M80 96 C70 118 62 138 56 158" stroke-width="0.7" opacity="0.4"/>
+            <!-- Right side wild wavy hair -->
+            <path d="M174 42 C192 58 202 88 214 118 C222 136 230 146 236 156" stroke-width="1.3" opacity="0.85"/>
+            <path d="M178 52 C194 72 202 100 214 130 C220 144 224 154 222 164" stroke-width="1.1" opacity="0.72"/>
+            <path d="M174 64 C188 86 194 112 204 140 C208 154 208 162 204 168" stroke-width="1.0" opacity="0.62"/>
+            <path d="M168 74 C180 96 186 118 194 146 C198 156 196 164 190 168" stroke-width="0.9" opacity="0.5"/>
+            <path d="M186 68 C202 88 216 112 228 138" stroke-width="0.8" opacity="0.45"/>
+            <path d="M192 92 C206 110 220 128 234 144" stroke-width="0.7" opacity="0.35"/>
+            <path d="M180 100 C188 120 194 140 198 158" stroke-width="0.7" opacity="0.4"/>
+          </g>
+
+          <!-- Face structure, forehead, cheekbones -->
+          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+            <!-- High domed forehead contour -->
+            <path d="M90 92 C88 68 92 46 106 36 C122 26 146 28 160 40 C172 52 172 72 168 94" stroke-width="1.5" opacity="0.95"/>
+            <!-- Forehead wrinkles -->
+            <path d="M104 52 C122 48 142 50 156 56" stroke-width="0.7" opacity="0.48"/>
+            <path d="M100 60 C120 56 144 58 158 64" stroke-width="0.8" opacity="0.58"/>
+            <path d="M104 68 C122 65 140 67 154 72" stroke-width="0.7" opacity="0.45"/>
+            <!-- Glabella furrow -->
+            <path d="M126 70 L124 80 M131 71 L130 79" stroke-width="0.9" opacity="0.65"/>
+            <!-- Cheekbones & lower temple -->
+            <path d="M90 94 C88 106 90 116 96 124" stroke-width="1.2" opacity="0.75"/>
+            <path d="M168 94 C168 106 165 116 158 126" stroke-width="1.2" opacity="0.75"/>
+            <path d="M94 106 C100 112 106 114 112 118" stroke-width="0.7" opacity="0.45"/>
+            <path d="M162 108 C156 114 150 116 144 120" stroke-width="0.7" opacity="0.45"/>
+          </g>
+
+          <!-- Deep-set stern eyes & eyebrows -->
+          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Left eyebrow -->
+            <path d="M95 80 C104 75 114 76 122 80" stroke-width="1.7" opacity="0.95"/>
+            <path d="M98 78 C108 74 116 75 123 78" stroke-width="0.9" opacity="0.65"/>
+            <!-- Right eyebrow -->
+            <path d="M135 81 C144 77 154 77 163 82" stroke-width="1.7" opacity="0.95"/>
+            <path d="M136 79 C146 75 155 76 161 80" stroke-width="0.9" opacity="0.65"/>
+
+            <!-- Left eye -->
+            <path d="M99 88 C105 83 114 83 120 88" stroke-width="1.5" opacity="1"/>
+            <path d="M100 89 C106 92 114 92 119 89" stroke-width="1.0" opacity="0.8"/>
+            <circle cx="109.5" cy="87.5" r="2.6" stroke-width="1.3" opacity="1"/>
+            <circle cx="109.5" cy="87.5" r="0.9" fill="#FF4500"/>
+            <!-- Left eyelid crease & under-eye bag -->
+            <path d="M98 85 C106 80 115 81 121 85" stroke-width="0.8" opacity="0.6"/>
+            <path d="M97 93 C104 97 114 97 120 94" stroke-width="0.8" opacity="0.55"/>
+            <path d="M95 90 L91 92 M95 93 L92 96" stroke-width="0.6" opacity="0.4"/>
+
+            <!-- Right eye -->
+            <path d="M137 89 C143 84 152 84 158 89" stroke-width="1.5" opacity="1"/>
+            <path d="M138 90 C144 93 152 93 157 90" stroke-width="1.0" opacity="0.8"/>
+            <circle cx="147.5" cy="88.5" r="2.5" stroke-width="1.3" opacity="1"/>
+            <circle cx="147.5" cy="88.5" r="0.9" fill="#FF4500"/>
+            <!-- Right eyelid crease & under-eye bag -->
+            <path d="M136 86 C144 82 153 82 159 86" stroke-width="0.8" opacity="0.6"/>
+            <path d="M137 94 C144 98 153 98 159 95" stroke-width="0.8" opacity="0.55"/>
+            <path d="M161 91 L165 93 M160 94 L164 97" stroke-width="0.6" opacity="0.4"/>
+          </g>
+
+          <!-- Strong nose -->
+          <g stroke="#FF4500" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M124 82 C123 92 121 102 120 110" stroke-width="1.2" opacity="0.85"/>
+            <path d="M133 83 C134 93 136 102 138 109" stroke-width="1.0" opacity="0.65"/>
+            <!-- Tip & nostrils -->
+            <path d="M116 112 C120 117 134 118 140 112" stroke-width="1.5" opacity="0.95"/>
+            <path d="M114 108 C112 112 115 115 120 114" stroke-width="1.1" opacity="0.8"/>
+            <path d="M142 109 C144 113 141 116 136 115" stroke-width="1.1" opacity="0.8"/>
+            <!-- Nose highlight line -->
+            <path d="M128 88 L128 111" stroke-width="0.6" opacity="0.35"/>
+          </g>
+
+          <!-- Thick drooping mustache & mouth hint -->
+          <g stroke="#FF4500" stroke-linecap="round">
+            <path d="M128 118 C116 117 104 123 92 136" stroke-width="1.6" opacity="1"/>
+            <path d="M128 118 C140 118 152 124 164 137" stroke-width="1.6" opacity="1"/>
+            <path d="M125 121 C114 122 102 129 94 142" stroke-width="1.2" opacity="0.82"/>
+            <path d="M131 121 C142 122 154 130 162 143" stroke-width="1.2" opacity="0.82"/>
+            <path d="M122 124 C112 127 104 134 98 145" stroke-width="1.0" opacity="0.7"/>
+            <path d="M134 124 C144 127 152 134 158 146" stroke-width="1.0" opacity="0.7"/>
+            <path d="M118 128 C124 126 132 126 138 129" stroke-width="1.1" opacity="0.75"/>
+            <!-- Subtle lower lip shadow -->
+            <path d="M120 133 C126 136 132 136 137 133" stroke-width="1.3" opacity="0.9"/>
+          </g>
+
+          <!-- Iconic wild multi-layered beard -->
+          <g stroke="#FF4500" stroke-linecap="round">
+            <!-- Outer beard silhouette left & right -->
+            <path d="M84 114 C72 134 68 158 78 182 C86 202 98 220 108 238" stroke-width="1.4" opacity="0.9"/>
+            <path d="M172 114 C182 136 184 160 174 184 C166 202 156 218 144 234" stroke-width="1.4" opacity="0.9"/>
+            <!-- Left beard waves -->
+            <path d="M88 124 C78 146 80 170 90 194 C98 212 104 226 112 246" stroke-width="1.2" opacity="0.8"/>
+            <path d="M94 134 C86 156 88 178 96 202 C102 218 110 232 116 248" stroke-width="1.1" opacity="0.74"/>
+            <path d="M102 140 C94 162 96 186 104 208 C109 224 115 236 121 250" stroke-width="1.0" opacity="0.68"/>
+            <path d="M110 142 C104 166 106 190 112 214 C116 228 120 240 125 248" stroke-width="1.0" opacity="0.65"/>
+            <path d="M82 136 C74 154 74 174 82 192" stroke-width="0.9" opacity="0.52"/>
+            <path d="M98 158 C92 178 94 198 102 218" stroke-width="0.8" opacity="0.48"/>
+            <!-- Center beard waves -->
+            <path d="M118 140 C114 164 116 188 122 212 C125 224 127 234 128 244" stroke-width="1.2" opacity="0.82"/>
+            <path d="M126 140 C125 166 126 190 130 214 C132 226 134 236 136 242" stroke-width="1.2" opacity="0.85"/>
+            <path d="M134 140 C136 164 136 188 138 210 C140 222 141 232 142 238" stroke-width="1.1" opacity="0.75"/>
+            <path d="M122 154 C120 176 122 198 126 220" stroke-width="0.8" opacity="0.5"/>
+            <path d="M131 156 C132 178 134 200 136 222" stroke-width="0.8" opacity="0.5"/>
+            <!-- Right beard waves -->
+            <path d="M142 142 C146 164 146 188 144 210 C142 222 140 232 138 240" stroke-width="1.0" opacity="0.68"/>
+            <path d="M150 140 C156 162 154 186 150 208 C147 220 144 228 142 234" stroke-width="1.1" opacity="0.74"/>
+            <path d="M158 134 C166 156 164 180 158 202 C154 214 150 224 146 232" stroke-width="1.2" opacity="0.8"/>
+            <path d="M166 124 C174 146 174 170 166 194 C160 208 154 220 148 230" stroke-width="1.2" opacity="0.8"/>
+            <path d="M174 136 C180 156 178 176 170 194" stroke-width="0.9" opacity="0.52"/>
+            <path d="M156 158 C162 178 158 198 152 216" stroke-width="0.8" opacity="0.48"/>
+            <!-- Stray wild beard ends -->
+            <path d="M90 198 C86 210 88 220 94 228" stroke-width="0.7" opacity="0.45"/>
+            <path d="M104 222 C102 232 104 240 108 248" stroke-width="0.8" opacity="0.55"/>
+            <path d="M118 232 C116 242 119 248 122 254" stroke-width="0.8" opacity="0.55"/>
+            <path d="M136 226 C138 236 142 242 146 246" stroke-width="0.7" opacity="0.5"/>
+            <path d="M162 198 C166 210 164 220 158 228" stroke-width="0.7" opacity="0.45"/>
+            <!-- Beard cross-texture shading -->
+            <path d="M84 152 C98 158 112 158 126 156 C142 158 156 156 170 150" stroke-width="0.55" opacity="0.28"/>
+            <path d="M86 174 C102 180 118 182 132 180 C148 180 160 176 170 170" stroke-width="0.55" opacity="0.25"/>
+            <path d="M96 196 C110 202 124 204 136 202 C148 200 156 196 164 190" stroke-width="0.55" opacity="0.24"/>
+          </g>
+        </svg>
       </div>
-      <div class="detail-info">
-        <div class="detail-head">
-          <span id="detail-symbol">H</span>
-          <span id="detail-name-ru">Водород</span>
-          <span id="detail-name-en">Hydrogen</span>
-        </div>
-        <div class="detail-badges">
-          <span id="detail-number" class="badge">№ 1</span>
-          <span id="detail-mass" class="badge">Ar: 1.008</span>
-          <span id="detail-category" class="badge">Неметалл</span>
-        </div>
-        <div class="detail-cards">
-          <div class="info-card">
-            <div class="info-label">Описание</div>
-            <div id="detail-desc" class="info-text"></div>
+      <div class="portrait-meta">
+        <div class="meta-index">ПЕРИОДИЧЕСКИЙ ЗАКОН // 1869</div>
+        <div class="meta-name">Дмитрий<br/>Менделеев</div>
+        <div class="meta-years">1834 — 1907 · ТОБОЛЬСК / СПБ</div>
+        <p class="meta-hint">Коснись любой клетки или проведи пальцем по сетке, чтобы открыть свойства и факты элемента.</p>
+        <div class="meta-stats">
+          <div class="stat-box">
+            <div class="stat-val">118</div>
+            <div class="stat-lbl">Элементов</div>
           </div>
-          <div class="info-card">
-            <div class="info-label">Свойство и особенность</div>
-            <div id="detail-feature" class="info-text"></div>
+          <div class="stat-box">
+            <div class="stat-val">18×7</div>
+            <div class="stat-lbl">Сетка</div>
           </div>
         </div>
       </div>
     </div>
-  </aside>
 
-  <script type="module">
-    const statusBar = document.getElementById("status-bar");
+    <div class="detail-view" data-role="detailView">
+      <div class="detail-head">
+        <div class="detail-badge">
+          <span class="detail-num" data-field="num">001</span>
+          <span class="detail-sym" data-field="sym">H</span>
+        </div>
+        <div class="detail-titles">
+          <div class="detail-title-row">
+            <span class="detail-ru" data-field="ru">Водород</span>
+            <span class="detail-en" data-field="en">Hydrogen</span>
+          </div>
+          <div class="detail-tags">
+            <span class="tag-pill" data-field="mass">Ar: 1.008</span>
+            <button type="button" class="tag-pill tag-cat" data-field="cat" title="Подсветить всю категорию">Неметалл</button>
+          </div>
+        </div>
+        <div class="detail-nav">
+          <div class="nav-row">
+            <button type="button" class="nav-btn" data-action="prev" aria-label="Предыдущий">←</button>
+            <button type="button" class="nav-btn" data-action="next" aria-label="Следующий">→</button>
+          </div>
+          <button type="button" class="nav-btn nav-btn-close" data-action="close">✕</button>
+        </div>
+      </div>
 
-    async function boot() {
-      if (typeof WebAssembly !== "object") {
-        statusBar.classList.add("error");
-        statusBar.textContent = "Ошибка: твой браузер не поддерживает WebAssembly.";
-        return;
+      <div class="detail-grid">
+        <div class="info-block">
+          <div class="info-lbl">ОПИСАНИЕ</div>
+          <div class="info-txt" data-field="desc"></div>
+        </div>
+        <div class="info-block fact">
+          <div class="info-lbl">СВОЙСТВО И ФАКТ</div>
+          <div class="info-txt" data-field="feat"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const RAW_ELEMENTS = [
+      [1,"H","Водород","Hydrogen","1.008","Неметалл",1,1,"Топливо звёзд и самый лёгкий газ во Вселенной — из него состоит три четверти всей видимой материи.","Горит почти невидимым днём пламенем, а в смеси с воздухом взрывается от малейшей искры (гремучий газ)."],
+      [2,"He","Гелий","Helium","4.0026","Благородный газ",1,18,"Единственный элемент, который нашли на Солнце по спектру раньше, чем обнаружили на Земле.","Не замерзает при обычном давлении даже у абсолютного нуля, а при −271 °C становится сверхтекучим и лезет вверх по стенкам сосуда."],
+      [3,"Li","Литий","Lithium","6.94","Щелочной металл",2,1,"Самый лёгкий металл на планете — в два раза легче воды, режется обычным ножом как твёрдое масло.","Сердце всех современных аккумуляторов; в воде шипит и носится по поверхности, не тонет даже в керосине."],
+      [4,"Be","Бериллий","Beryllium","9.0122","Щёлочноземельный металл",2,2,"Сверхлёгкий и жёсткий металл, из которого делают зеркала космического телескопа «Джеймс Уэбб».","Почти прозрачен для рентгеновских лучей; его соли сладкие на вкус, но при этом крайне токсичны."],
+      [5,"B","Бор","Boron","10.81","Полуметалл",2,13,"Тёмный, почти как алмаз твёрдый полуметалл, который держит в узде цепную реакцию в ядерных реакторах.","Его нитрид по прочности соперничает с алмазом, а соединения бора окрашивают огонь в ядовито-зелёный цвет."],
+      [6,"C","Углерод","Carbon","12.011","Неметалл",2,14,"Главный конструктор жизни — образует больше соединений, чем все остальные элементы вместе взятые.","Из одних и тех же атомов складывается и мягкий грифель карандаша, и самый твёрдый природный минерал — алмаз."],
+      [7,"N","Азот","Nitrogen","14.007","Неметалл",2,15,"Газ, которым мы дышим на 78% прямо сейчас, хотя организм его почти не замечает.","В чистом виде ленив, но его соединения дают и мощную взрывчатку, и главный строительный материал для белков и ДНК."],
+      [8,"O","Кислород","Oxygen","15.999","Неметалл",2,16,"Окислитель, который запускает дыхание, костры и ржавчину — почти половина массы земной коры приходится на него.","В жидком виде он не прозрачный, а ярко-голубой и заметно притягивается сильным магнитом."],
+      [9,"F","Фтор","Fluorine","18.998","Галоген",2,17,"Самый агрессивный химический хулиган таблицы — отбирает электроны даже у благородных газов.","В его струе загораются вода, стекло и кирпич; при этом в составе тефлона он даёт идеально скользкую и мирную посуду."],
+      [10,"Ne","Неон","Neon","20.180","Благородный газ",2,18,"Газ ночных мегаполисов, который отказывается вступать в химические реакции с чем бы то ни было.","Под высоким напряжением сам по себе светится только резким красно-оранжевым — остальные цвета вывесок дают другие газы."],
+      [11,"Na","Натрий","Sodium","22.990","Щелочной металл",3,1,"Мягкий серебристый металл, который на воздухе тускнеет за секунды и хранится под слоем масла.","Кусочек натрия в воде расплавляется в шарик, бегает с шипением и может взорваться; при этом его хлорид — обычная соль на столе."],
+      [12,"Mg","Магний","Magnesium","24.305","Щёлочноземельный металл",3,2,"Лёгкий металл, без которого растения не смогли бы ловить солнечный свет — он сидит в центре хлорофилла.","Горит ослепительно белым пламенем и не тушится водой — наоборот, от воды вспыхивает ещё яростнее."],
+      [13,"Al","Алюминий","Aluminium","26.982","Постпереходный металл",3,13,"Самый распространённый металл в земной коре — от фюзеляжей самолётов до банок для напитков.","В XIX веке стоил дороже золота: Наполеон III подавал почётным гостям алюминиевые ложки, а остальным — золотые."],
+      [14,"Si","Кремний","Silicon","28.085","Полуметалл",3,14,"Фундамент всей электроники и одновременно основа обычного пляжного песка и кварца.","Для процессоров его очищают до 99,9999999% — не больше одного чужого атома на миллиард своих."],
+      [15,"P","Фосфор","Phosphorus","30.974","Неметалл",3,15,"Элемент, открытый алхимиком при выпаривании вёдер мочи в поисках философского камня.","Белый фосфор светится в темноте и сам загорается на воздухе, а красный мирно работает на чиркаше спичечного коробка."],
+      [16,"S","Сера","Sulfur","32.06","Неметалл",3,16,"Ярко-жёлтый камень вулканов, знакомый человечеству со времён пороха и античных легенд.","Чистая сера почти не пахнет — резкий запах тухлых яиц и вулканов дают её соединения с водородом."],
+      [17,"Cl","Хлор","Chlorine","35.45","Галоген",3,17,"Тяжёлый жёлто-зелёный газ с удушливым запахом, который сделал водопроводную воду безопасной.","Тяжелее воздуха в два с половиной раза, поэтому стелется по земле; в Первую мировую стал первым боевым газом."],
+      [18,"Ar","Аргон","Argon","39.948","Благородный газ",3,18,"Третий по объёму газ в воздухе (почти 1%), получивший имя от греческого слова «ленивый».","Закачивается в лампы накаливания и стеклопакеты, чтобы не давать нити сгореть и хуже пропускать холод."],
+      [19,"K","Калий","Potassium","39.098","Щелочной металл",4,1,"Нервный и бурный металл, без ионов которого в теле не пройдёт ни один нервный импульс.","Вспыхивает фиолетовым пламенем сразу при касании воды; природный калий-40 делает даже бананы слегка радиоактивными."],
+      [20,"Ca","Кальций","Calcium","40.078","Щёлочноземельный металл",4,2,"Строительный бетон природы: из него собраны кости, зубы, раковины, мел, мрамор и цемент.","В чистом виде это настоящий серебристый металл, который быстро сереет на воздухе и бурно пузырится в воде."],
+      [21,"Sc","Скандий","Scandium","44.956","Переходный металл",4,3,"Металл, который Менделеев точно предсказал за 8 лет до открытия под именем «экабор».","Крошечная добавка в 0,5% делает алюминиевые сплавы настолько прочными, что из них варят рамы гоночных велосипедов и детали истребителей."],
+      [22,"Ti","Титан","Titanium","47.867","Переходный металл",4,4,"Металл авиации, подлодок и имплантов — прочный как сталь, но почти вдвое легче неё.","Организм человека не отторгает его, а кость буквально срастается с ним; при ударе о камень даёт яркие белые искры."],
+      [23,"V","Ванадий","Vanadium","50.942","Переходный металл",4,5,"Назван в честь скандинавской богини красоты Фрейи (Ванадис) за разноцветные растворы своих солей.","Делает сталь неубиваемой при ударах — именно хром-ванадиевые ключи не срываются при работе с тугими болтами."],
+      [24,"Cr","Хром","Chromium","51.996","Переходный металл",4,6,"Самый твёрдый чистый металл, давший блеск автодискам и защиту нержавеющей стали.","Именно следы хрома превращают бесцветный корунд в ярко-красный рубин, а берилл — в зелёный изумруд."],
+      [25,"Mn","Марганец","Manganese","54.938","Переходный металл",4,7,"Серый хрупкий металл, без которого нельзя выплавить практически ни одну тонну современной стали.","Сплав Гадфильда с марганцем при ударе не ломается, а становится ещё твёрже — из него делают гусеницы танков и решётки сейфов."],
+      [26,"Fe","Железо","Iron","55.845","Переходный металл",4,8,"Металл, на котором держится цивилизация, ядро Земли и красный цвет нашей крови.","Ядерный синтез в звёздах упирается именно в железо — дальше энергия не выделяется, и звезда гибнет во вспышке сверхновой."],
+      [27,"Co","Кобальт","Cobalt","58.933","Переходный металл",4,9,"Имя получил от злых горных духов кобольдов — рудокопы травились мышьяком при выплавке его руд.","Даёт легендарный глубокий «кобальтовый синий» цвет стеклу и держит форму лопаток реактивных турбин при адском жаре."],
+      [28,"Ni","Никель","Nickel","58.693","Переходный металл",4,10,"Стойкий к ржавчине металл монет, струн электрогитар и железных метеоритов.","Сплав никеля с титаном (нитинол) обладает «памятью формы» — согнутая проволока сама выпрямляется в горячей воде."],
+      [29,"Cu","Медь","Copper","63.546","Переходный металл",4,11,"Один из двух не серебристых металлов таблицы — жилы всей мировой электросети.","Убивает бактерии на своей поверхности за пару часов; на воздухе покрывается зелёной патиной, как Статуя Свободы."],
+      [30,"Zn","Цинк","Zinc","65.38","Переходный металл",4,12,"Телохранитель стали: оцинкованные кузова и крыши не ржавеют, пока цинк принимает удар на себя.","Вместе с медью даёт латунь, а при сгибании чистого прутка цинка слышен тихий кристаллический треск."],
+      [31,"Ga","Галлий","Gallium","69.723","Постпереходный металл",4,13,"Металл для фокусов и полупроводников — твёрдый на столе, но плавится при +29,8 °C прямо в ладони.","Ложка из галлия тает в чашке горячего чая, а капля галлия на алюминии за час превращает прочную банку в ломкую бумагу."],
+      [32,"Ge","Германий","Germanium","72.630","Полуметалл",4,14,"Предсказанный Менделеевым «экасилиций», с которого началась эпоха первых транзисторов.","Непрозрачен для обычного света, но пропускает инфракрасный — из него точат линзы для тепловизоров."],
+      [33,"As","Мышьяк","Arsenic","74.922","Полуметалл",4,15,"Самый знаменитый яд дворцовых интриг, который сегодня работает в сверхбыстрых микросхемах и лазерах.","При нагреве не плавится, а сразу испаряется в ядовитый дым с отчётливым запахом чеснока."],
+      [34,"Se","Селен","Selenium","78.971","Неметалл",4,16,"Светочувствительный неметалл, благодаря которому появились первые фотоэлементы и ксероксы.","На свету его электропроводность подскакивает в сотни раз; в микродозах жизненно важен человеку, в избытке — токсичен."],
+      [35,"Br","Бром","Bromine","79.904","Галоген",4,17,"Единственный неметалл, который при комнатной температуре является едкой тёмно-бурой жидкостью.","Название переводится как «зловоние» — его тяжёлые пары разъедают кожу и моментально отбивают желание подходить близко."],
+      [36,"Kr","Криптон","Krypton","83.798","Благородный газ",4,18,"Редкий газ с именем «скрытый», не имеющий ничего общего с зелёным камнем из комиксов.","Даёт ослепительный белый свет в фотовспышках, а раньше по длине волны его излучения задавали эталон метра."],
+      [37,"Rb","Рубидий","Rubidium","85.468","Щелочной металл",5,1,"Сверхактивный мягкий металл, названный за две яркие тёмно-красные линии в спектре.","Вспыхивает сам по себе на воздухе, а в виде паров работает в компактных атомных часах и спутниках навигации."],
+      [38,"Sr","Стронций","Strontium","87.62","Щёлочноземельный металл",5,2,"Металл, который отвечает за самый сочный карминово-красный цвет фейерверков и сигнальных ракет.","Алюминат стронция накапливает дневной свет и светится в темноте до 12 часов — из него делают метки на циферблатах."],
+      [39,"Y","Иттрий","Yttrium","88.906","Переходный металл",5,3,"Один из четырёх элементов, названных в честь крошечной шведской деревни Иттербю.","Его кристаллы стоят в мощных промышленных лазерах, а в соединении с цирконием дают знаменитые искусственные бриллианты — фианиты."],
+      [40,"Zr","Цирконий","Zirconium","91.224","Переходный металл",5,4,"Устойчивый к кислотам и жару металл, из которого делают оболочки ядерного топлива и керамические ножи.","Почти не поглощает нейтроны; древнейший кристалл циркона, найденный в Австралии, старше 4,4 миллиарда лет."],
+      [41,"Nb","Ниобий","Niobium","92.906","Переходный металл",5,5,"Тугоплавкий металл сопел космических ракет и сверхпроводящих магнитов Большого адронного коллайдера.","При анодировании покрывается оксидной плёнкой любого цвета радуги без единой капли краски."],
+      [42,"Mo","Молибден","Molybdenum","95.95","Переходный металл",5,6,"Металл, который веками путали со свинцом и графитом, пока не выяснили, что он держит температуру 2623 °C.","Добавляется в броневую сталь, а его дисульфид — сухая смазка, работающая даже в вакууме космоса."],
+      [43,"Tc","Технеций","Technetium","[98]","Переходный металл",5,7,"Первый искусственно созданный человеком элемент — самый лёгкий из тех, у кого нет стабильных изотопов.","Его короткоживущий изотоп Tc-99m каждый день используют в больницах по всему миру для точной диагностики органов."],
+      [44,"Ru","Рутений","Ruthenium","101.07","Переходный металл",5,8,"Единственный природный элемент таблицы, открытый в России и названный в её честь (Ruthenia).","Не растворяется даже в царской водке; его сверхтонкий слой в жёстких дисках позволил в разы увеличить их объём."],
+      [45,"Rh","Родий","Rhodium","102.91","Переходный металл",5,9,"Один из самых дорогих драгоценных металлов планеты — временами в несколько раз дороже золота.","Обладает зеркальным холодным блеском и абсолютно не тускнеет — им покрывают белое золото и начиняют автокатализаторы."],
+      [46,"Pd","Палладий","Palladium","106.42","Переходный металл",5,10,"Серебристый металл платиновой группы, названный в честь астероида Паллада.","Работает как губка для водорода — один объём палладия способен впитать до 900 объёмов этого газа."],
+      [47,"Ag","Серебро","Silver","107.87","Переходный металл",5,11,"Чемпион всей таблицы по электропроводности, теплопроводности и отражению видимого света.","Чернеет на воздухе не от кислорода, а от микроскопических примесей сероводорода; один грамм тянется в проволоку длиной 2 километра."],
+      [48,"Cd","Кадмий","Cadmium","112.41","Переходный металл",5,12,"Мягкий, тяжёлый и коварно токсичный металл, из которого раньше делали никель-кадмиевые батарейки.","Его соединения дают художникам самые сочные и стойкие жёлтые и алые краски, но накапливаются в организме годами."],
+      [49,"In","Индий","Indium","114.82","Постпереходный металл",5,13,"Металл, на который ты смотришь прямо сейчас: его прозрачный оксид делает сенсорным экран смартфона.","Настолько мягкий, что его можно жевать как жвачку и оставлять на нём след ногтем; при сгибании издаёт резкий «крик»."],
+      [50,"Sn","Олово","Tin","118.71","Постпереходный металл",5,14,"Металл бронзового века и всех современных припоев, удерживающих детали на печатных платах.","На сильном морозе ниже −13 °C белое олово болеет «оловянной чумой» — само рассыпается в серый порошок."],
+      [51,"Sb","Сурьма","Antimony","121.76","Полуметалл",5,15,"Блестящий хрупкий полуметалл, которым ещё в Древнем Египте подводили глаза.","При застывании из расплава расширяется, как вода — идеально заполняет тончайшие буквы типографских шрифтов."],
+      [52,"Te","Теллур","Tellurium","127.60","Полуметалл",5,16,"Назван в честь Земли (Tellus), хотя в земной коре встречается реже платины.","Если вдохнуть микроскопическую дозу его соединений, дыхание и кожа на несколько недель приобретут стойкий запах чеснока."],
+      [53,"I","Иод","Iodine","126.90","Галоген",5,17,"Тёмные металлически блестящие кристаллы, без которых щитовидная железа просто останавливается.","При лёгком нагреве минует жидкую стадию и мгновенно превращается в густой фиолетовый пар — отсюда и греческое имя."],
+      [54,"Xe","Ксенон","Xenon","131.29","Благородный газ",5,18,"Тяжёлый благородный газ, ставший рабочим телом ионных двигателей космических зондов.","Светится пронзительным голубоватым светом в фарах и кинопроекторах; при вдыхании делает голос неестественно низким и басовитым."],
+      [55,"Cs","Цезий","Caesium","132.91","Щелочной металл",6,1,"Золотистый сверхреактивный металл, задающий точное время для всей планеты в атомных часах.","Плавится при +28,5 °C, а при попадании даже в ледяную воду мгновенно взрывается с разбиванием стеклянной посуды."],
+      [56,"Ba","Барий","Barium","137.33","Щёлочноземельный металл",6,2,"Тяжёлый металл зелёных салютов и рентгеновского контраста для желудка.","Растворимые соли бария — сильный яд, но его сульфат вообще не растворяется в кислоте, поэтому «бариевую кашу» спокойно пьют перед снимком."],
+      [57,"La","Лантан","Lanthanum","138.91","Лантаноид",9,4,"Открывает семейство редкоземельных металлов; имя означает «прятаться» — химики искали его 36 лет.","Входит в состав стёкол дорогих фотообъективов и кремней для зажигалок, высекающих сноп горячих искр."],
+      [58,"Ce","Церий","Cerium","140.12","Лантаноид",9,5,"Самый распространённый из редкоземельных металлов — на самом деле его в земле больше, чем меди и свинца.","Основа «кремней» в обычных зажигалках: чиркни по нему сталью, и от трения вспыхнет рой искр температурой 3000 °C."],
+      [59,"Pr","Празеодим","Praseodymium","140.91","Лантаноид",9,6,"«Зелёный близнец», которого 44 года принимали за один элемент в паре с неодимом.","Делает жёлто-зелёное стекло для очков стеклодувов и сварщиков — оно наглухо гасит слепящую жёлтую вспышку натрия."],
+      [60,"Nd","Неодим","Neodymium","144.24","Лантаноид",9,7,"Король современных магнитов — работает в наушниках, электромоторах, микрофонах и ветряках.","Два крупных неодимовых магнита притягиваются с такой силой, что легко ломают пальцы и раскалываются сами от удара."],
+      [61,"Pm","Прометий","Promethium","[145]","Лантаноид",9,8,"Единственный полностью радиоактивный лантаноид — в природе на всей Земле его наберётся меньше килограмма.","Его соли светятся в темноте бледно-голубым светом и питают миниатюрные ядерные батарейки, работающие годами."],
+      [62,"Sm","Самарий","Samarium","150.36","Лантаноид",9,9,"Первый элемент, названный в честь реального человека — русского горного инженера Василия Самарского.","Самарий-кобальтовые магниты чуть слабее неодимовых, но спокойно держат силу там, где неодим размагничивается от жара."],
+      [63,"Eu","Европий","Europium","151.96","Лантаноид",9,10,"Самый химически активный и мягкий из редкоземельных металлов, защищающий банкноты евро от подделки.","В ультрафиолете его соединения вспыхивают чистым красным светом — именно так проверяют подлинность купюр."],
+      [64,"Gd","Гадолиний","Gadolinium","157.25","Лантаноид",9,11,"Металл с уникальным магнитным характером, главный контрастный агент в аппаратах МРТ.","Теряет магнетизм прямо при комнатной температуре (+20 °C) и рекордно сильно поглощает тепловые нейтроны."],
+      [65,"Tb","Тербий","Terbium","158.93","Лантаноид",9,12,"Ещё один «выпускник» шведской деревни Иттербю, отвечающий за сочный зелёный свет люминофоров.","Сплав тербия с железом и диспрозием (терфенол-D) заметно меняет длину в магнитном поле — его используют в мощных подводных сонарах."],
+      [66,"Dy","Диспрозий","Dysprosium","162.50","Лантаноид",9,13,"Имя переводится как «труднодоступный» — химик выделил его только после тридцати с лишним попыток.","Незаменимая присадка в магнитах электромобилей: без него движок терял бы тягу при перегреве."],
+      [67,"Ho","Гольмий","Holmium","164.93","Лантаноид",9,14,"Назван в честь Стокгольма (Holmia) и держит абсолютный рекорд таблицы по силе магнитного момента.","Его кристаллы меняют цвет в зависимости от лампы: при дневном свете жёлтые, а под люминесцентной — огненно-красные."],
+      [68,"Er","Эрбий","Erbium","167.26","Лантаноид",9,15,"Невидимый двигатель скоростного интернета — именно им легируют подводные оптоволоконные кабели.","Усиливает световой сигнал прямо в стекле без перевода в электричество, а в стекле даёт нежный розовый оттенок."],
+      [69,"Tm","Тулий","Thulium","168.93","Лантаноид",9,16,"Самый редкий из стабильных лантаноидов, названный в честь легендарного северного острова Туле.","Облучённый в реакторе тулий работает как карманный рентген-аппарат без розетки — для полевой медицины и проверки швов."],
+      [70,"Yb","Иттербий","Ytterbium","173.05","Лантаноид",9,17,"Четвёртый элемент из шведской деревни Иттербю, на базе которого созданы самые точные оптические часы.","Иттербиевые часы не собьются даже на одну секунду за время, превышающее возраст всей Вселенной."],
+      [71,"Lu","Лютеций","Lutetium","174.97","Лантаноид",9,18,"Самый тяжёлый, твёрдый и дорогой из редкоземельных металлов — назван по античному имени Парижа.","Помогает геологам вычислять точный возраст метеоритов, а в медицине используется для прицельного уничтожения опухолей."],
+      [72,"Hf","Гафний","Hafnium","178.49","Переходный металл",6,4,"Химический двойник циркония, названный в честь Копенгагена; скрывался от учёных до 1923 года.","В отличие от циркония, жадно ловит нейтроны; его оксид работает изолятором в нанотранзисторах современных процессоров."],
+      [73,"Ta","Тантал","Tantalum","180.95","Переходный металл",6,5,"Сверхстойкий металл конденсаторов внутри каждого смартфона, получивший имя из-за «мук» при растворении.","Его не берут почти никакие кислоты (кроме плавиковой), а температура плавления превышает 3000 °C."],
+      [74,"W","Вольфрам","Tungsten","183.84","Переходный металл",6,6,"Рекордсмен среди всех металлов по температуре плавления (3422 °C) и прочности на разрыв.","Символ W остался от «волчьей пены» (Wolfram); плотность почти как у золота — вольфрамовый кубик ощущается нереально тяжёлым."],
+      [75,"Re","Рений","Rhenium","186.21","Переходный металл",6,7,"Последний открытый стабильный элемент таблицы — один из самых редких и жаропрочных металлов планеты.","Сплавы с рением не ползут и не трескаются в соплах реактивных двигателей при температурах, плавящих обычную сталь."],
+      [76,"Os","Осмий","Osmium","190.23","Переходный металл",6,8,"Самое плотное вещество на Земле: литровая бутылка осмия весила бы больше 22,5 килограммов.","Голубоватый и очень твёрдый, но его летучий оксид воняет резкой редькой и моментально обжигает глаза."],
+      [77,"Ir","Иридий","Iridium","192.22","Переходный металл",6,9,"Абсолютный чемпион по стойкости к коррозии и главный «свидетель» гибели динозавров.","В земной коре его почти нет, зато полно в астероидах — тонкий слой иридия по всей планете выдал падение метеорита 66 млн лет назад."],
+      [78,"Pt","Платина","Platinum","195.08","Переходный металл",6,10,"Конкистадоры презрительно звали её «серебришко» (platina) и топили в море, пока не поняли её цену.","Идеальный катализатор: пластинка платины раскаляется и поджигает водород на воздухе сама, без всякой искры."],
+      [79,"Au","Золото","Gold","196.97","Переходный металл",6,11,"Космический металл, рождённый при столкновении нейтронных звёзд — не ржавеет и не тускнеет тысячелетиями.","Настолько пластично, что один грамм можно раскатать в полупрозрачный лист площадью целый квадратный метр."],
+      [80,"Hg","Ртуть","Mercury","200.59","Переходный металл",6,12,"Единственный металл, который остаётся жидким при обычной температуре — «живое серебро» алхимиков.","Тяжелее свинца и железа: чугунная гиря спокойно плавает в ведре ртути, а золото в ней буквально растворяется."],
+      [81,"Tl","Таллий","Thallium","204.38","Постпереходный металл",6,13,"«Яд отравителей» — мягкий металл, названный за ярко-зелёную, как молодой побег, линию в спектре.","Маскируется в организме под безвредный калий, легко проникает даже через кожу и вызывает быстрое выпадение волос."],
+      [82,"Pb","Свинец","Lead","207.2","Постпереходный металл",6,14,"Тяжёлый и мягкий щит от радиации, из которого древние римляне делали трубы (отсюда символ Pb — plumbum).","Накапливается в организме и бьёт по нервной системе; из-за свинца в бензине в XX веке пришлось переходить на неэтилированное топливо."],
+      [83,"Bi","Висмут","Bismuth","208.98","Постпереходный металл",6,15,"Самый красивый металл для домашней плавки — сам складывается в ступенчатые радужные кристаллы.","Самый сильный диамагнетик среди металлов (отталкивается от магнита); технически радиоактивен, но период полураспада в миллиард раз больше возраста Вселенной."],
+      [84,"Po","Полоний","Polonium","[209]","Постпереходный металл",6,16,"Открыт Марией и Пьером Кюри в 1898 году и назван в честь её родины — Польши.","Из-за бешеного альфа-распада кусочек полония-210 сам разогревается до 500 °C — он грел советские «Луноходы» лунной ночью."],
+      [85,"At","Астат","Astatine","[210]","Галоген",6,17,"Самый редкий природный элемент на Земле — во всей земной коре одновременно существует меньше 30 граммов.","Настолько нестабилен и горяч от распада, что если собрать видимую глазом крупинку, она мгновенно испарится сама."],
+      [86,"Rn","Радон","Radon","[222]","Благородный газ",6,18,"Самый тяжёлый природный газ — невидимый, без запаха и радиоактивный, просачивается из гранитных пород.","Скапливается в непроветриваемых подвалах и на первых этажах; при заморозке до −71 °C начинает светиться жёлто-оранжевым."],
+      [87,"Fr","Франций","Francium","[223]","Щелочной металл",7,1,"Последний элемент, впервые найденный в природе, а не синтезированный в ускорителе — живёт считаные минуты.","Период полураспада самого живучего изотопа — всего 22 минуты; в мире никогда не видели его в виде слитка."],
+      [88,"Ra","Радий","Radium","[226]","Щёлочноземельный металл",7,2,"Металл, который в начале XX века добавляли в часы, зубную пасту и шоколад, пока не поняли цену радиации.","Светится в темноте слабым голубоватым сиянием, потому что его излучение заставляет светиться сам воздух вокруг."],
+      [89,"Ac","Актиний","Actinium","[227]","Актиноид",10,4,"Родоначальник семейства актиноидов, в 150 раз более радиоактивный, чем радий.","В темноте испускает жутковатое бледно-синее свечение из-за ионизации окружающего воздуха."],
+      [90,"Th","Торий","Thorium","232.04","Актиноид",10,5,"Назван в честь бога грома Тора — потенциальное ядерное топливо будущего, которого в земле втрое больше урана.","Его оксид выдерживает 3300 °C — раньше им пропитывали газовые фонари, чтобы они давали ослепительно белый свет."],
+      [91,"Pa","Протактиний","Protactinium","231.04","Актиноид",10,6,"Один из самых дорогих и бесполезных в быту природных элементов — крайняя редкость и сильная радиотоксичность.","Название означает «родитель актиния», потому что распадаясь, он напрямую превращается именно в него."],
+      [92,"U","Уран","Uranium","238.03","Актиноид",10,7,"Самый тяжёлый элемент, встречающийся в заметных объёмах на Земле — основа атомной энергетики.","Килограмм урана-235 при делении даёт столько же энергии, сколько эшелон из 2500 тонн угля; его соли красят стекло в неоново-зелёный."],
+      [93,"Np","Нептуний","Neptunium","[237]","Актиноид",10,8,"Первый трансурановый элемент, открытый в 1940 году и названный по следующей за Ураном планете — Нептуну.","Долгое время считался только искусственным, пока его микроскопические следы не нашли прямо в урановых рудах."],
+      [94,"Pu","Плутоний","Plutonium","[244]","Актиноид",10,9,"Металл атомного века и дальнего космоса — именно его распад питает «Вояджеры» и марсоход Perseverance.","У него шесть разных кристаллических состояний при нагреве; тёплый на ощупь, а при окислении превращается в самовозгорающуюся пыль."],
+      [95,"Am","Америций","Americium","[243]","Актиноид",10,10,"Единственный искусственный трансурановый элемент, который вполне может висеть у тебя на потолке.","Микроскопическая крупинка америция-241 работает внутри ионизационных датчиков дыма, ловя первые частицы гари."],
+      [96,"Cm","Кюрий","Curium","[247]","Актиноид",10,11,"Назван в честь Марии и Пьера Кюри — радиоактивный металл, отправленный на Марс в научных приборах.","Из-за сильного альфа-излучения растворы кюрия в темноте светятся красным, а марсоходы облучают им камни, чтобы узнать их состав."],
+      [97,"Bk","Берклий","Berkelium","[247]","Актиноид",10,12,"Получен в лаборатории города Беркли в 1949 году; за всю историю мира его синтезировали чуть больше грамма.","Стал мишенью-трамплином для открытия теннессина — чтобы получить 22 миллиграмма берклия, реактор работал 250 дней."],
+      [98,"Cf","Калифорний","Californium","[251]","Актиноид",10,13,"Один из самых дорогих материалов в истории человечества — миллионы долларов за один грамм.","Один микрограмм калифорния-252 испускает 170 миллионов нейтронов в минуту — им запускают ядерные реакторы и ищут нефть."],
+      [99,"Es","Эйнштейний","Einsteinium","[252]","Актиноид",10,14,"Впервые обнаружен не в тихой лаборатории, а в радиоактивном пепле после первого термоядерного взрыва в 1952 году.","Назван в честь Альберта Эйнштейна; излучает столько энергии, что светится голубым и сам разрушает свою кристаллическую решётку."],
+      [100,"Fm","Фермий","Fermium","[257]","Актиноид",10,15,"Юбилейный сотый элемент, тоже найденный в обломках термоядерного испытания «Айви Майк».","Последний элемент, который можно получить в ядерном реакторе — всё, что тяжелее, требует огромных ускорителей частиц."],
+      [101,"Md","Менделевий","Mendelevium","[258]","Актиноид",10,16,"Назван в честь Дмитрия Менделеева — американские физики сами предложили это имя в разгар Холодной войны.","Впервые был получен буквально поштучно — 17 атомов за эксперимент, пойманных на золотую фольгу."],
+      [102,"No","Нобелий","Nobelium","[259]","Актиноид",10,17,"Элемент имени Альфреда Нобеля, вокруг открытия которого десятилетиями спорили физики Швеции, США и СССР.","В итоге приоритет закрепили за лабораторией в Дубне; самый устойчивый изотоп живёт меньше часа."],
+      [103,"Lr","Лоуренсий","Lawrencium","[266]","Актиноид",10,18,"Замыкает ряд актиноидов; назван в честь Эрнеста Лоуренса, изобретателя циклотрона.","Получается лишь атомами за раз, но физики всё равно умудрились измерить, как легко он отдаёт свой внешний электрон."],
+      [104,"Rf","Резерфордий","Rutherfordium","[267]","Переходный металл",7,4,"Первый сверхтяжёлый трансактиноид — открыл «войну трансфермиевых элементов» между Дубной и Беркли.","В СССР его 30 лет звали «курчатовием», но в 1997 году международный союз утвердил имя Эрнеста Резерфорда."],
+      [105,"Db","Дубний","Dubnium","[268]","Переходный металл",7,5,"Назван в честь подмосковного наукограда Дубна — мировой столицы синтеза сверхтяжёлых элементов.","Некоторые его изотопы живут больше суток, что для сверхтяжёлых атомов — целая вечность."],
+      [106,"Sg","Сиборгий","Seaborgium","[269]","Переходный металл",7,6,"Назван в честь Гленна Сиборга — первого человека, при жизни увидевшего своё имя в таблице Менделеева.","Несмотря на секунды жизни, химики успели доказать, что он ведёт себя честно, как старший брат вольфрама."],
+      [107,"Bh","Борий","Bohrium","[270]","Переходный металл",7,7,"Сверхтяжёлый металл имени Нильса Бора — отца квантовой модели атома.","В природе его нет вообще: получают столкновением ядер висмута и хрома на огромной скорости."],
+      [108,"Hs","Хассий","Hassium","[277]","Переходный металл",7,8,"Получил имя от немецкой земли Гессен, где находится знаменитый ускоритель в Дармштадте.","По расчётам должен быть почти вдвое плотнее осмия — около 41 г/см³, но собрать слиток невозможно."],
+      [109,"Mt","Мейтнерий","Meitnerium","[278]","Переходный металл",7,9,"Назван в честь австрийского физика Лизы Мейтнер, первой объяснившей деление ядра урана.","Единственный элемент таблицы, названный в честь женщины не из мифологии (кюрий назван сразу за обоих супругов Кюри)."],
+      [110,"Ds","Дармштадтий","Darmstadtium","[281]","Переходный металл",7,10,"Сверхтяжёлый аналог платины, синтезированный в немецком Дармштадте в 1994 году.","Сначала физики в шутку предлагали назвать его «полицием» — из-за номера 110, телефона полиции в Германии."],
+      [111,"Rg","Рентгений","Roentgenium","[282]","Переходный металл",7,11,"Тяжёлый родственник золота, названный в честь Вильгельма Рентгена, открывшего X-лучи.","Из-за релятивистских эффектов электронов вокруг тяжёлого ядра он, скорее всего, не жёлтый как золото, а серебристый."],
+      [112,"Cn","Коперниций","Copernicium","[285]","Переходный металл",7,12,"Сверхтяжёлый сосед ртути, получивший имя Николая Коперника ровно в день его 537-летия.","Теория предсказывает, что из-за безумной скорости электронов он настолько летуч, что при комнатной температуре был бы газом."],
+      [113,"Nh","Нихоний","Nihonium","[286]","Постпереходный металл",7,13,"Первый в истории элемент, открытый в Азии — японские физики назвали его в честь Японии (Нихон).","Команда RIKEN девять лет бомбардировала мишень триллионами ионов цинка, чтобы поймать всего три атома нихония."],
+      [114,"Fl","Флеровий","Flerovium","[289]","Постпереходный металл",7,14,"Синтезирован в Дубне и назван в честь Лаборатории ядерных реакций имени Георгия Флёрова.","Находится прямо на пороге знаменитого «острова стабильности» и ведёт себя почти как инертный благородный газ."],
+      [115,"Mc","Московий","Moscovium","[290]","Постпереходный металл",7,15,"Назван в честь Московской области, где в Дубне российско-американская группа впервые синтезировала его.","За миллисекунды распадается в нихоний; у любителей конспирологии «элемент 115» популярен как вымышленное топливо НЛО."],
+      [116,"Lv","Ливерморий","Livermorium","[293]","Постпереходный металл",7,16,"Плод сотрудничества Дубны и американской Ливерморской национальной лаборатории в Калифорнии.","Живёт всего около 60 миллисекунд — меньше одного моргания глаза — и сразу превращается во флеровий."],
+      [117,"Ts","Теннессин","Tennessine","[294]","Галоген",7,17,"Второй по тяжести известный элемент, названный в честь штата Теннесси, где сварили мишень из берклия.","Стоит в столбце галогенов, но из-за огромной массы ядра, вероятно, больше похож на полуметалл, чем на хлор или иод."],
+      [118,"Og","Оганесон","Oganesson","[294]","Благородный газ",7,18,"Финал таблицы — назван в честь академика Юрия Оганесяна, второго человека, удостоенного этой чести при жизни.","Формально стоит среди благородных газов, но по расчётам при комнатной температуре был бы твёрдым и химически активным."]
+    ];
+
+    const ELEMENTS = RAW_ELEMENTS.map(([num, sym, ru, en, mass, cat, row, col, desc, feat]) => ({
+      num, sym, ru, en, mass, cat, row, col, desc, feat
+    }));
+
+    const ptable = document.getElementById("ptable");
+    const gridStage = document.getElementById("gridStage");
+    const desktopCenter = document.getElementById("desktopCenter");
+    const mobileInspector = document.getElementById("mobileInspector");
+    const tpl = document.getElementById("inspectorTpl");
+    const searchInput = document.getElementById("searchInput");
+    const clearSearch = document.getElementById("clearSearch");
+    const resetBtn = document.getElementById("resetBtn");
+    const hudMain = document.getElementById("hudMain");
+    const hudSub = document.getElementById("hudSub");
+
+    // Mount two synced inspector instances (desktop center + mobile bottom)
+    desktopCenter.appendChild(tpl.content.cloneNode(true));
+    mobileInspector.appendChild(tpl.content.cloneNode(true));
+    const inspectors = [desktopCenter, mobileInspector];
+
+    const cellMap = new Map();
+    let selectedNum = null;
+    let activeCategory = null;
+    let isScrubbing = false;
+
+    // Classic series markers for lanthanides/actinides
+    function addMarker(label, row, col) {
+      const m = document.createElement("div");
+      m.className = "cell-marker";
+      m.textContent = label;
+      m.style.gridRow = row;
+      m.style.gridColumn = col;
+      ptable.appendChild(m);
+    }
+    addMarker("57–71", 6, 3);
+    addMarker("89–103", 7, 3);
+
+    // Build all 118 cells
+    const frag = document.createDocumentFragment();
+    for (const el of ELEMENTS) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.num = el.num;
+      cell.dataset.cat = el.cat;
+      cell.style.gridRow = el.row;
+      cell.style.gridColumn = el.col;
+      cell.innerHTML =
+        `<div class="cell-top"><span class="cell-num">${el.num}</span><span class="cell-mass">${el.mass}</span></div>` +
+        `<span class="cell-sym">${el.sym}</span>` +
+        `<span class="cell-ru">${el.ru}</span>`;
+      cellMap.set(el.num, cell);
+      frag.appendChild(cell);
+    }
+    ptable.appendChild(frag);
+
+    function padNum(n) {
+      return String(n).padStart(3, "0");
+    }
+
+    function updateInspectorViews(el) {
+      for (const root of inspectors) {
+        const pv = root.querySelector('[data-role="portraitView"]');
+        const dv = root.querySelector('[data-role="detailView"]');
+        if (!el) {
+          pv.classList.remove("hidden");
+          dv.classList.remove("visible");
+          continue;
+        }
+        pv.classList.add("hidden");
+        dv.classList.add("visible");
+        root.querySelector('[data-field="num"]').textContent = padNum(el.num);
+        root.querySelector('[data-field="sym"]').textContent = el.sym;
+        root.querySelector('[data-field="ru"]').textContent = el.ru;
+        root.querySelector('[data-field="en"]').textContent = el.en;
+        root.querySelector('[data-field="mass"]').textContent = `Ar: ${el.mass}`;
+        const catBtn = root.querySelector('[data-field="cat"]');
+        catBtn.textContent = el.cat;
+        catBtn.classList.toggle("active", activeCategory === el.cat);
+        root.querySelector('[data-field="desc"]').textContent = el.desc;
+        root.querySelector('[data-field="feat"]').textContent = el.feat;
       }
 
-      try {
-        statusBar.textContent = "Загружаю данные 118 элементов...";
-        const wasmModule = await import("./pkg/mendeleev_table.js");
-        await wasmModule.default();
-      } catch (err) {
-        statusBar.classList.add("error");
-        statusBar.textContent = "Не удалось загрузить скомпилированный Rust-модуль (./pkg/mendeleev_table.js). Проверь, завершилась ли сборка в GitHub Actions.";
-        console.error(err);
+      if (el) {
+        hudMain.textContent = `${el.num} · ${el.sym} · ${el.ru.toUpperCase()}`;
+        hudSub.textContent = `${el.cat.toUpperCase()} · Ar ${el.mass}`;
+        resetBtn.classList.remove("active");
+      } else {
+        hudMain.textContent = "ВЕДИ ПАЛЬЦЕМ ПО СЕТКЕ";
+        hudSub.textContent = "18 ГРУПП · 7 ПЕРИОДОВ";
+        resetBtn.classList.add("active");
       }
     }
 
-    boot();
+    function selectElement(num) {
+      if (selectedNum === num) return;
+      if (selectedNum !== null) {
+        const prev = cellMap.get(selectedNum);
+        if (prev) prev.classList.remove("active");
+      }
+      selectedNum = num;
+      if (num === null) {
+        updateInspectorViews(null);
+        return;
+      }
+      const el = ELEMENTS[num - 1];
+      if (!el) return;
+      const cell = cellMap.get(num);
+      if (cell) cell.classList.add("active");
+      updateInspectorViews(el);
+    }
+
+    function applyFilter() {
+      const q = searchInput.value.trim().toLowerCase();
+      clearSearch.classList.toggle("visible", q.length > 0);
+
+      let matches = [];
+      for (const el of ELEMENTS) {
+        const cell = cellMap.get(el.num);
+        const matchSearch = !q ||
+          String(el.num) === q ||
+          el.sym.toLowerCase().includes(q) ||
+          el.ru.toLowerCase().includes(q) ||
+          el.en.toLowerCase().includes(q);
+        const matchCat = !activeCategory || el.cat === activeCategory;
+
+        cell.classList.toggle("dimmed", !(matchSearch && matchCat));
+        cell.classList.toggle("cat-match", Boolean(activeCategory && el.cat === activeCategory));
+
+        if (matchSearch && matchCat) matches.push(el);
+      }
+
+      if (q) {
+        const exact = matches.find(
+          e => String(e.num) === q || e.sym.toLowerCase() === q || e.ru.toLowerCase() === q
+        );
+        if (exact) selectElement(exact.num);
+        else if (matches.length === 1) selectElement(matches[0].num);
+      }
+    }
+
+    // Pointer click & smooth finger scrubbing across the grid
+    function hitCellAt(clientX, clientY) {
+      const target = document.elementFromPoint(clientX, clientY);
+      if (!target) return null;
+      const cell = target.closest(".cell");
+      return cell ? Number(cell.dataset.num) : null;
+    }
+
+    gridStage.addEventListener("pointerdown", (e) => {
+      const num = hitCellAt(e.clientX, e.clientY);
+      if (num !== null) {
+        isScrubbing = true;
+        selectElement(num);
+      }
+    });
+
+    gridStage.addEventListener("pointermove", (e) => {
+      if (!isScrubbing) return;
+      const num = hitCellAt(e.clientX, e.clientY);
+      if (num !== null) {
+        selectElement(num);
+      }
+    });
+
+    window.addEventListener("pointerup", () => { isScrubbing = false; });
+    window.addEventListener("pointercancel", () => { isScrubbing = false; });
+
+    // Inspector buttons (prev / next / close / category highlight)
+    for (const root of inspectors) {
+      root.addEventListener("click", (e) => {
+        const actionBtn = e.target.closest("[data-action]");
+        if (actionBtn) {
+          const act = actionBtn.dataset.action;
+          if (act === "close") {
+            activeCategory = null;
+            selectElement(null);
+            applyFilter();
+          } else if (act === "prev" && selectedNum !== null) {
+            selectElement(selectedNum > 1 ? selectedNum - 1 : 118);
+          } else if (act === "next" && selectedNum !== null) {
+            selectElement(selectedNum < 118 ? selectedNum + 1 : 1);
+          }
+          return;
+        }
+        const catBtn = e.target.closest('[data-field="cat"]');
+        if (catBtn && selectedNum !== null) {
+          const cat = ELEMENTS[selectedNum - 1].cat;
+          activeCategory = activeCategory === cat ? null : cat;
+          applyFilter();
+          updateInspectorViews(ELEMENTS[selectedNum - 1]);
+        }
+      });
+    }
+
+    searchInput.addEventListener("input", applyFilter);
+    clearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      activeCategory = null;
+      applyFilter();
+      searchInput.focus();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      activeCategory = null;
+      selectElement(null);
+      applyFilter();
+    });
+
+    // Keyboard navigation on PC
+    window.addEventListener("keydown", (e) => {
+      if (document.activeElement === searchInput) {
+        if (e.key === "Escape") searchInput.blur();
+        return;
+      }
+      if (e.key === "Escape") {
+        activeCategory = null;
+        selectElement(null);
+        applyFilter();
+      } else if (e.key === "ArrowRight") {
+        selectElement(selectedNum === null ? 1 : (selectedNum < 118 ? selectedNum + 1 : 1));
+      } else if (e.key === "ArrowLeft") {
+        selectElement(selectedNum === null ? 118 : (selectedNum > 1 ? selectedNum - 1 : 118));
+      }
+    });
+
+    updateInspectorViews(null);
   </script>
 </body>
 </html>
