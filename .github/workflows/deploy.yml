@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages
+name: Build Website and Windows App
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-web:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -48,13 +48,28 @@ jobs:
         with:
           path: dist
 
-  deploy:
+  deploy-web:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-web
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  build-windows-app:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Windows Slint App
+        run: cargo build --release --bin mendeleev_app
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mendeleev-Windows-x64
+          path: target/release/mendeleev_app.exe
