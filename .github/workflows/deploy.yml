@@ -29,6 +29,7 @@ jobs:
         run: |
           mkdir -p dist
           cp index.html dist/index.html
+          cp -r css js dist/
           touch dist/.nojekyll
 
       - name: Setup Pages
@@ -97,6 +98,7 @@ jobs:
                    build/dex
 
           cp index.html build/assets/index.html
+          cp -r css js build/assets/
 
           CDN="https://cdn.jsdelivr.net/npm/three@0.187.0"
           curl -fsSL --retry 3 "$CDN/build/three.module.js" -o build/assets/three/build/three.module.js
@@ -165,8 +167,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.mendeleev.table3d"
-              android:versionCode="4"
-              android:versionName="3.1">
+              android:versionCode="5"
+              android:versionName="3.2">
 
               <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
 
@@ -307,10 +309,23 @@ jobs:
                       public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                           String url = request.getUrl().toString();
                           if (url.startsWith(APP_ORIGIN)) {
-                              if (url.endsWith("favicon.ico")) {
+                              String subPath = url.substring(APP_ORIGIN.length());
+                              int q = subPath.indexOf('?');
+                              if (q >= 0) subPath = subPath.substring(0, q);
+                              int h = subPath.indexOf('#');
+                              if (h >= 0) subPath = subPath.substring(0, h);
+                              if (subPath.isEmpty()) subPath = "index.html";
+                              if (subPath.endsWith("favicon.ico")) {
                                   return new WebResourceResponse("image/x-icon", "UTF-8", 204, "No Content", null, new ByteArrayInputStream(new byte[0]));
                               }
-                              return assetResponse("index.html", "text/html");
+                              String mime = "text/html";
+                              if (subPath.endsWith(".css")) mime = "text/css";
+                              else if (subPath.endsWith(".js") || subPath.endsWith(".mjs")) mime = "application/javascript";
+                              else if (subPath.endsWith(".json")) mime = "application/json";
+                              else if (subPath.endsWith(".svg")) mime = "image/svg+xml";
+                              else if (subPath.endsWith(".png")) mime = "image/png";
+                              else if (subPath.endsWith(".webp")) mime = "image/webp";
+                              return assetResponse(subPath, mime);
                           }
                           if (url.startsWith(THREE_CDN)) {
                               String subPath = url.substring(THREE_CDN.length());
@@ -334,8 +349,8 @@ jobs:
                       "  if(sm && sm.classList.contains('open')){ document.getElementById('settingsClose').click(); return 'handled'; }" +
                       "  var fs=document.getElementById('fsPortal');" +
                       "  if(fs && fs.classList.contains('open')){ document.getElementById('btnExpand').click(); return 'handled'; }" +
-                      "  var dv=document.getElementById('detailView');" +
-                      "  if(dv && dv.classList.contains('is-visible')){ document.getElementById('btnClose').click(); return 'handled'; }" +
+                      "  var dv=document.getElementById('detailSection');" +
+                      "  if(dv && dv.classList.contains('open')){ document.getElementById('btnClose').click(); return 'handled'; }" +
                       "  return 'exit';" +
                       "})()",
                       new ValueCallback<String>() {
